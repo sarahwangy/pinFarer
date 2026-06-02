@@ -38,7 +38,11 @@ export default function ImportPage() {
     } else if (name.endsWith('.csv')) {
       // CSV needs geocoding
       const csvRows = parseGoogleMapsCSV(text)
-      if (!csvRows.length) return
+      console.log('[CSV] parsed rows:', csvRows.length, csvRows.slice(0, 3))
+      if (!csvRows.length) {
+        alert('未能解析 CSV 文件，请确认是 Google Maps 导出的格式（包含 Title 和 URL 列）')
+        return
+      }
       setMode('geocoding')
       setProgress(0)
 
