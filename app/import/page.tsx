@@ -2,6 +2,8 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { parseKML } from '@/lib/kml-parser'
+import { parseGeoJSON } from '@/lib/geojson-parser'
+import { parseGoogleMapsCSV } from '@/lib/csv-parser'
 import ImportTable from '@/components/ImportTable'
 import type { ParsedPin, PinSource, PinStatus } from '@/types/pin'
 
@@ -14,25 +16,66 @@ const SOURCES: { value: PinSource; label: string }[] = [
   { value: 'self',        label: '✦ 自己探索' },
 ]
 
+type ImportMode = 'idle' | 'geocoding' | 'importing' | 'done'
+
 export default function ImportPage() {
   const router = useRouter()
   const [rows, setRows] = useState<ParsedPin[]>([])
   const [source, setSource] = useState<PinSource>('unknown')
   const [isDragging, setIsDragging] = useState(false)
-  const [importStatus, setImportStatus] = useState<'idle' | 'importing' | 'done'>('idle')
+  const [mode, setMode] = useState<ImportMode>('idle')
   const [progress, setProgress] = useState(0)
+  const [progressLabel, setProgressLabel] = useState('')
 
   const handleFile = useCallback(async (file: File) => {
     const text = await file.text()
-    const parsed = parseKML(text)
-    setRows(parsed.map(p => ({ ...p, source })))
-  }, [source])
+    const name = file.name.toLowerCase()
+
+    if (name.endsWith('.kml')) {
+      setRows(parseKML(text))
+    } else if (name.endsWith('.json')) {
+      setRows(parseGeoJSON(text))
+    } else if (name.endsWith('.csv')) {
+      // CSV needs geocoding
+      const csvRows = parseGoogleMapsCSV(text)
+      if (!csvRows.length) return
+      setMode('geocoding')
+      setProgress(0)
+
+      const results: ParsedPin[] = []
+      for (let i = 0; i < csvRows.length; i++) {
+        setProgressLabel(`正在查询坐标 ${i + 1} / ${csvRows.length}：${csvRows[i].name}`)
+        setProgress(Math.round((i / csvRows.length) * 100))
+
+        const res = await fetch(`/api/geocode?name=${encodeURIComponent(csvRows[i].name)}`)
+        const data = await res.json()
+
+        if (data.found) {
+          results.push({
+            name: csvRows[i].name,
+            lat: data.lat,
+            lng: data.lng,
+            status: 'watchlist',
+            source: 'unknown',
+            country: data.country,
+          })
+        }
+        // Rate limit: 1 req/sec for Nominatim
+        await new Promise(r => setTimeout(r, 1100))
+      }
+
+      setProgress(100)
+      setMode('idle')
+      setProgressLabel('')
+      setRows(results)
+    }
+  }, [])
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
     const file = e.dataTransfer.files[0]
-    if (file?.name.endsWith('.kml')) handleFile(file)
+    if (file) handleFile(file)
   }, [handleFile])
 
   const onFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,32 +88,39 @@ export default function ImportPage() {
   }, [])
 
   const handleImport = async () => {
-    setImportStatus('importing')
+    setMode('importing')
     setProgress(0)
     const body = rows.map(r => ({
-      name: r.name, lat: r.lat, lng: r.lng,
-      status: r.status, source,
+      name: r.name,
+      lat: r.lat,
+      lng: r.lng,
+      status: r.status,
+      source,
+      country: r.country ?? null,
     }))
 
-    const iv = setInterval(() => setProgress(p => Math.min(p + 15, 90)), 150)
-
-    const res = await fetch('/api/pins', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-
-    clearInterval(iv)
-    setProgress(100)
-
-    if (res.ok) {
-      setImportStatus('done')
-      setTimeout(() => router.push('/'), 1200)
-    } else {
-      setImportStatus('idle')
-      alert('导入失败，请重试')
+    const BATCH = 100
+    const batches = Math.ceil(body.length / BATCH)
+    for (let i = 0; i < batches; i++) {
+      const chunk = body.slice(i * BATCH, (i + 1) * BATCH)
+      const res = await fetch('/api/pins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(chunk),
+      })
+      if (!res.ok) {
+        setMode('idle')
+        alert(`第 ${i + 1} 批导入失败，请重试`)
+        return
+      }
+      setProgress(Math.round(((i + 1) / batches) * 100))
     }
+
+    setMode('done')
+    setTimeout(() => router.push('/'), 1200)
   }
+
+  const isWorking = mode === 'geocoding' || mode === 'importing'
 
   return (
     <div className="min-h-screen bg-[#F7F3EE]">
@@ -91,48 +141,61 @@ export default function ImportPage() {
           从 <em className="italic text-[var(--forest)]">Google 地图</em> 导入
         </h1>
         <p className="text-[13px] text-[var(--muted)] mb-6">
-          上传 Google Takeout 导出的 KML 文件，批量导入收藏地点
+          支持 Google Takeout 导出的 JSON、CSV 文件，以及 KML 文件
         </p>
 
+        {/* Drop zone */}
         <div
           onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={onDrop}
-          onClick={() => document.getElementById('fileInput')?.click()}
+          onClick={() => !isWorking && document.getElementById('fileInput')?.click()}
           className={`rounded-2xl border-2 border-dashed text-center px-6 py-12 cursor-pointer
             transition-all mb-6
-            ${isDragging
-              ? 'border-[var(--forest)] bg-[var(--forest)]/5'
+            ${isDragging ? 'border-[var(--forest)] bg-[var(--forest)]/5'
+              : isWorking ? 'border-black/10 bg-white cursor-default'
               : 'border-black/15 bg-white hover:border-[var(--forest)]/50'
             }`}
         >
-          <input id="fileInput" type="file" accept=".kml" className="hidden" onChange={onFileInput} />
+          <input id="fileInput" type="file" accept=".kml,.json,.csv" className="hidden" onChange={onFileInput} />
           <div className="text-4xl mb-3">📍</div>
           <div className="font-serif text-[18px] font-semibold text-[var(--ink)] mb-1.5">
-            将 KML 文件拖拽到此处
+            将文件拖拽到此处
           </div>
           <div className="text-[13px] text-[var(--muted)]">
             或 <span className="text-[var(--forest)] font-semibold">点击选择文件</span>
           </div>
-          <div className="mt-3 flex justify-center gap-2 items-center">
-            <span className="text-[11px] bg-black/[0.06] px-2 py-0.5 rounded font-semibold text-[var(--muted)]">KML</span>
-            <span className="text-[11px] text-[var(--muted)]">来自 Google Takeout → 地图 → 已保存地点</span>
+          <div className="mt-3 flex justify-center gap-2 items-center flex-wrap">
+            {['.json (Saved Places)', '.csv (列表)', '.kml'].map(f => (
+              <span key={f} className="text-[11px] bg-black/[0.06] px-2 py-0.5 rounded font-semibold text-[var(--muted)]">{f}</span>
+            ))}
           </div>
         </div>
 
-        {importStatus === 'importing' && (
-          <div className="mb-6">
-            <div className="flex justify-between text-[13px] font-medium text-[var(--ink)] mb-1.5">
-              <span>正在导入…</span><span>{progress}%</span>
+        {/* Progress (geocoding or importing) */}
+        {isWorking && (
+          <div className="mb-6 bg-white rounded-2xl p-5 border border-black/[0.07]">
+            <div className="flex justify-between text-[13px] font-medium text-[var(--ink)] mb-2">
+              <span>{mode === 'geocoding' ? '正在查询坐标…' : '正在导入…'}</span>
+              <span>{progress}%</span>
             </div>
-            <div className="h-1.5 bg-black/[0.08] rounded-full overflow-hidden">
+            <div className="h-1.5 bg-black/[0.08] rounded-full overflow-hidden mb-2">
               <div className="h-full bg-[var(--forest)] rounded-full transition-[width] duration-300"
                 style={{ width: `${progress}%` }} />
             </div>
+            {progressLabel && (
+              <p className="text-[11px] text-[var(--muted)] truncate">{progressLabel}</p>
+            )}
+            {mode === 'geocoding' && (
+              <p className="text-[11px] text-[var(--muted)] mt-1">
+                每秒查询1个地点，请耐心等待…
+              </p>
+            )}
           </div>
         )}
 
-        {rows.length > 0 && (
+        {/* Source selector */}
+        {rows.length > 0 && !isWorking && (
           <div className="flex items-center gap-4 mb-5 flex-wrap">
             <span className="text-[13px] font-semibold text-[var(--ink)]">默认来源：</span>
             <div className="flex gap-2 flex-wrap">
@@ -142,8 +205,7 @@ export default function ImportPage() {
                     ${source === s.value
                       ? 'bg-[var(--ink)] text-white border-[var(--ink)]'
                       : 'bg-white text-[var(--muted)] border-black/10 hover:border-black/25'
-                    }`}
-                >
+                    }`}>
                   {s.label}
                 </button>
               ))}
@@ -153,23 +215,22 @@ export default function ImportPage() {
 
         <ImportTable rows={rows} onChange={updateRowStatus} />
 
-        {rows.length > 0 && (
+        {rows.length > 0 && !isWorking && (
           <div className="flex justify-end gap-3">
-            <button onClick={() => router.push('/')}
+            <button type="button" onClick={() => router.push('/')}
               className="px-5 py-2.5 rounded-xl border border-black/15 text-[14px] font-semibold
                 text-[var(--ink)] hover:border-black/30 transition-colors">
               取消
             </button>
             <button
+              type="button"
               onClick={handleImport}
-              disabled={importStatus !== 'idle'}
+              disabled={mode !== 'idle'}
               className={`px-5 py-2.5 rounded-xl text-[14px] font-semibold text-white transition-all
-                ${importStatus === 'done'
-                  ? 'bg-[var(--mint)]'
-                  : 'bg-[var(--forest)] hover:bg-[#245a41] hover:-translate-y-px disabled:opacity-60'
-                }`}
-            >
-              {importStatus === 'done' ? '✓ 导入成功！' : `导入 ${rows.length} 个地点 →`}
+                ${mode === 'done' ? 'bg-[var(--mint)]'
+                  : 'bg-[var(--forest)] hover:bg-[#245a41] hover:-translate-y-px'
+                }`}>
+              {mode === 'done' ? '✓ 导入成功！' : `导入 ${rows.length} 个地点 →`}
             </button>
           </div>
         )}

@@ -23,4 +23,5 @@ export interface ParsedPin {
   lng: number
   status: PinStatus
   source: PinSource
+  country?: string
 }
