@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /Users/sha/Code/AI-code-26/4-Pinfarer-travel/docs/superpowers/specs)",
+      "WebFetch(domain:www.skills.sh)",
+      "Bash(ls ~/.claude/plugins/ 2>/dev/null || echo \"no plugins dir\")",
+      "Read(//Users/sha/.claude/plugins/**)",
+      "Bash(python3 -c \"import json,sys; plugins=json.load\\(sys.stdin\\); [print\\(p.get\\('name','?'\\)\\) for p in plugins]\")",
+      "Bash(npx skills *)",
+      "Bash(open /Users/sha/Code/AI-code-26/4-Pinfarer-travel/mockup.html)",
+      "Bash(python3 -)",
+      "Bash(open /Users/sha/Code/AI-code-26/4-Pinfarer-travel/mockup-zh.html)",
+      "Bash(open /Users/sha/Code/AI-code-26/4-Pinfarer-travel/mockup-zh-light.html)",
+      "Bash(npx create-next-app@14 pinfarer --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npm list *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(npx jest *)",
+      "Bash(mkdir -p /Users/sha/Code/AI-code-26/4-Pinfarer-travel/pinfarer/app/place/\\\\[id\\\\])",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(rm -rf /Users/sha/Code/AI-code-26/4-Pinfarer-travel/.git)"
+    ],
+    "additionalDirectories": [
+      "/Users/sha/Code/AI-code-26/4-Pinfarer-travel/docs/superpowers",
+      "/Users/sha/Code/AI-code-26/4-Pinfarer-travel/pinfarer/app/place",
+      "/Users/sha/Code/AI-code-26/4-Pinfarer-travel/.git"
+    ]
+  }
+}

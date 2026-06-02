@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pinfarer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,400;1,9..144,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sand:#F5F0E8;--cream:#FFF8EF;--ink:#1A1A2E;--deep-ocean:#0d1b2a;
+  --muted:#8A8578;--muted2:#b8b2a8;--coral:#E76F51;--gold:#F4A261;
+  --forest:#2D6A4F;--mint:#52B788;--amber:#F4A261;--lavender:#9B89C4;
+  --sidebar-w:340px;--nav-h:54px;
+}
+html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--deep-ocean)}
+
+/* ══════════════════════════════════════
+   TOP NAV
+══════════════════════════════════════ */
+.topnav{
+  position:fixed;top:0;left:0;right:0;height:var(--nav-h);
+  background:rgba(10,22,35,0.96);backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  display:flex;align-items:center;padding:0 20px;gap:0;z-index:500;
+}
+.logo{
+  font-family:'Fraunces',serif;font-size:20px;font-weight:700;
+  color:#fff;letter-spacing:-0.3px;display:flex;align-items:center;gap:7px;
+  margin-right:32px;flex-shrink:0;
+}
+.logo-pin{
+  width:10px;height:10px;border-radius:50%;background:var(--coral);
+  box-shadow:0 0 10px rgba(231,111,81,.8);
+  animation:logoPulse 2.5s ease-in-out infinite;
+}
+@keyframes logoPulse{0%,100%{box-shadow:0 0 8px rgba(231,111,81,.6)}50%{box-shadow:0 0 18px rgba(231,111,81,1),0 0 30px rgba(231,111,81,.3)}}
+
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{
+  padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;
+  color:rgba(255,255,255,.45);cursor:pointer;border:none;background:none;
+  font-family:'DM Sans',sans-serif;transition:all .15s;
+}
+.nav-tab:hover{color:rgba(255,255,255,.8);background:rgba(255,255,255,.06)}
+.nav-tab.active{color:#fff;background:rgba(255,255,255,.1)}
+
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.nav-btn{
+  background:var(--coral);color:#fff;border:none;border-radius:8px;
+  padding:7px 14px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;
+  cursor:pointer;transition:all .15s;
+}
+.nav-btn:hover{background:#d4623e;transform:translateY(-1px)}
+.nav-btn.ghost{background:transparent;border:1.5px solid rgba(255,255,255,.18);color:rgba(255,255,255,.7)}
+.nav-btn.ghost:hover{border-color:rgba(255,255,255,.4);color:#fff;transform:none}
+
+/* ══════════════════════════════════════
+   PAGES
+══════════════════════════════════════ */
+.page{position:fixed;inset:var(--nav-h) 0 0 0;display:none;overflow:hidden}
+.page.active{display:block}
+
+/* ══════════════════════════════════════
+   PAGE 1 — MAP
+══════════════════════════════════════ */
+#page-map{display:flex}
+
+.map-bg{
+  flex:1;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse 80% 60% at 40% 50%,#0f2843 0%,#0d1b2a 60%,#060e18 100%);
+}
+.map-grid{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(100,160,220,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(100,160,220,.04) 1px,transparent 1px);
+  background-size:48px 48px;
+}
+/* Globe canvas */
+#globeCanvas{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);cursor:grab}
+#globeCanvas:active{cursor:grabbing}
+
+/* Map pins overlay */
+.map-pin{
+  position:absolute;width:12px;height:12px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.3);cursor:pointer;z-index:10;
+  transform:translate(-50%,-50%);transition:transform .2s,box-shadow .2s;
+}
+.map-pin:hover{transform:translate(-50%,-50%) scale(1.7)}
+.map-pin.visited  {background:var(--mint);  box-shadow:0 0 8px rgba(82,183,136,.6)}
+.map-pin.watchlist{background:var(--amber); box-shadow:0 0 8px rgba(244,162,97,.6)}
+.map-pin.dream    {background:var(--lavender);box-shadow:0 0 8px rgba(155,137,196,.6)}
+@keyframes visitedPulse{0%,100%{box-shadow:0 0 8px rgba(82,183,136,.5)}50%{box-shadow:0 0 18px rgba(82,183,136,.9),0 0 32px rgba(82,183,136,.25)}}
+.map-pin.visited{animation:visitedPulse 3s ease-in-out infinite}
+
+/* Filter bar */
+.filter-bar{
+  position:absolute;top:12px;left:12px;display:flex;gap:8px;z-index:50
+}
+.chip{
+  display:flex;align-items:center;gap:6px;padding:6px 13px;border-radius:20px;
+  font-size:12px;font-weight:600;cursor:pointer;backdrop-filter:blur(8px);
+  background:rgba(13,27,42,.75);color:rgba(255,255,255,.55);
+  border:1.5px solid rgba(255,255,255,.1);transition:all .15s;
+}
+.chip:hover{color:#fff;border-color:rgba(255,255,255,.3)}
+.chip.active{color:#fff}
+.chip-dot{width:7px;height:7px;border-radius:50%}
+.chip-all.active{background:rgba(231,111,81,.2);border-color:rgba(231,111,81,.5)}
+.chip-v.active  {background:rgba(82,183,136,.18);border-color:rgba(82,183,136,.5)}
+.chip-w.active  {background:rgba(244,162,97,.18); border-color:rgba(244,162,97,.5)}
+.chip-d.active  {background:rgba(155,137,196,.18);border-color:rgba(155,137,196,.5)}
+
+/* View toggle */
+.view-toggle{
+  position:absolute;bottom:16px;left:12px;display:flex;gap:6px;z-index:50
+}
+.vtbtn{
+  padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;
+  backdrop-filter:blur(8px);background:rgba(13,27,42,.75);color:rgba(255,255,255,.5);
+  border:1.5px solid rgba(255,255,255,.1);transition:all .15s;font-family:'DM Sans',sans-serif;
+}
+.vtbtn:hover,.vtbtn.active{color:#fff;border-color:rgba(255,255,255,.35);background:rgba(13,27,42,.9)}
+
+/* SIDEBAR */
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;background:var(--sand);
+  display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.3);
+  animation:slideInRight .35s ease;
+}
+@keyframes slideInRight{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+.sb-head{padding:16px 18px 12px;border-bottom:1px solid rgba(0,0,0,.07);background:var(--cream)}
+.sb-title{
+  font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--ink);
+  margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;
+}
+.sb-badge{
+  font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;
+  color:var(--muted);background:rgba(0,0,0,.07);padding:2px 8px;border-radius:10px;
+}
+.sb-search{position:relative}
+.sb-search input{
+  width:100%;padding:8px 12px 8px 34px;border:1.5px solid rgba(0,0,0,.09);
+  border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;
+  background:#fff;color:var(--ink);outline:none;transition:border-color .15s;
+}
+.sb-search input:focus{border-color:var(--coral)}
+.sb-search input::placeholder{color:var(--muted)}
+.sb-search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px}
+
+.sb-list{flex:1;overflow-y:auto;padding:6px 0}
+.sb-list::-webkit-scrollbar{width:3px}
+.sb-list::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:2px}
+.sb-section{padding:10px 18px 3px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+
+.sb-item{
+  display:flex;align-items:center;gap:11px;padding:9px 18px;cursor:pointer;
+  transition:background .1s;border-left:3px solid transparent;
+}
+.sb-item:hover{background:rgba(0,0,0,.04)}
+.sb-item.sel{background:rgba(231,111,81,.06);border-left-color:var(--coral)}
+.sb-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sb-info{flex:1;min-width:0}
+.sb-name{font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-meta{font-size:11px;color:var(--muted);margin-top:1px;display:flex;gap:5px}
+.sb-pin-badge{
+  font-size:10px;font-weight:600;padding:2px 7px;border-radius:8px;flex-shrink:0
+}
+.bv{background:rgba(82,183,136,.14);color:#2a9060}
+.bw{background:rgba(244,162,97,.14);color:#c07020}
+.bd{background:rgba(155,137,196,.14);color:#6b55a0}
+
+.sb-stats{
+  padding:12px 18px;border-top:1px solid rgba(0,0,0,.07);background:var(--cream);
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+.sb-stat-n{
+  font-family:'Fraunces',serif;font-size:24px;font-weight:700;
+  color:var(--coral);line-height:1;
+}
+.sb-stat-l{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+
+/* Tooltip */
+.tooltip{
+  position:fixed;background:rgba(10,20,33,.92);backdrop-filter:blur(8px);
+  color:#fff;padding:7px 11px;border-radius:7px;font-size:12px;font-weight:500;
+  pointer-events:none;opacity:0;transition:opacity .12s;z-index:600;
+  border:1px solid rgba(255,255,255,.09);
+}
+.tooltip.on{opacity:1}
+.tt-sub{font-size:10px;opacity:.6;margin-top:2px}
+
+/* ══════════════════════════════════════
+   PAGE 2 — DASHBOARD
+══════════════════════════════════════ */
+#page-dash{
+  background:var(--sand);overflow-y:auto;padding:28px 32px;
+  display:none;
+}
+#page-dash.active{display:block}
+
+.dash-header{
+  display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;
+}
+.dash-title{font-family:'Fraunces',serif;font-size:32px;font-weight:700;color:var(--ink);line-height:1}
+.dash-title em{font-style:italic;color:var(--coral)}
+.dash-subtitle{font-size:13px;color:var(--muted);margin-top:4px}
+
+/* KPI cards */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kpi-card{
+  background:var(--cream);border-radius:14px;padding:18px 20px;
+  border:1px solid rgba(0,0,0,.06);position:relative;overflow:hidden;
+}
+.kpi-card::before{
+  content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;
+  border-radius:50%;opacity:.08;
+}
+.kpi-v::before{background:var(--mint)}
+.kpi-w::before{background:var(--amber)}
+.kpi-d::before{background:var(--lavender)}
+.kpi-c::before{background:var(--coral)}
+.kpi-num{
+  font-family:'Fraunces',serif;font-size:40px;font-weight:700;line-height:1;
+}
+.kpi-v .kpi-num{color:var(--mint)}
+.kpi-w .kpi-num{color:var(--amber)}
+.kpi-d .kpi-num{color:var(--lavender)}
+.kpi-c .kpi-num{color:var(--coral)}
+.kpi-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-top:5px}
+.kpi-icon{font-size:20px;margin-bottom:8px}
+
+/* Charts row */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.chart-card{
+  background:var(--cream);border-radius:14px;padding:20px;
+  border:1px solid rgba(0,0,0,.06);
+}
+.chart-title{
+  font-family:'Fraunces',serif;font-size:16px;font-weight:600;
+  color:var(--ink);margin-bottom:16px;
+}
+
+/* Bar chart */
+.bar-chart{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{font-size:12px;color:var(--muted);width:80px;flex-shrink:0;text-align:right}
+.bar-track{flex:1;height:8px;background:rgba(0,0,0,.07);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width 1s ease}
+.bar-count{font-size:11px;font-weight:600;color:var(--ink);width:24px;text-align:right}
+
+/* Donut chart */
+.donut-wrap{display:flex;align-items:center;gap:20px}
+.donut-legend{display:flex;flex-direction:column;gap:8px;flex:1}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink)}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.legend-pct{margin-left:auto;font-weight:600;color:var(--muted)}
+
+/* AI Recommendation */
+.ai-card{
+  background:var(--ink);border-radius:14px;padding:22px 24px;
+  border:1px solid rgba(255,255,255,.06);position:relative;overflow:hidden;
+}
+.ai-card::before{
+  content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;
+  background:radial-gradient(circle,rgba(231,111,81,.15) 0%,transparent 70%);
+}
+.ai-card-title{
+  font-family:'Fraunces',serif;font-size:18px;font-weight:600;color:#fff;
+  margin-bottom:4px;display:flex;align-items:center;gap:8px;
+}
+.ai-tag{
+  font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;
+  background:rgba(231,111,81,.2);color:var(--coral);padding:2px 8px;
+  border-radius:10px;border:1px solid rgba(231,111,81,.3);
+}
+.ai-sub{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:18px}
+.ai-recs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.ai-rec{
+  background:rgba(255,255,255,.05);border-radius:10px;padding:14px;
+  border:1px solid rgba(255,255,255,.07);transition:border-color .15s,background .15s;cursor:pointer;
+}
+.ai-rec:hover{background:rgba(255,255,255,.08);border-color:rgba(231,111,81,.4)}
+.ai-rec-city{font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:#fff;font-style:italic}
+.ai-rec-country{font-size:11px;color:rgba(255,255,255,.45);margin-top:2px}
+.ai-rec-reason{font-size:11px;color:rgba(255,255,255,.6);margin-top:8px;line-height:1.5}
+.ai-rec-score{
+  margin-top:8px;display:flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:600;color:var(--gold);
+}
+
+/* ══════════════════════════════════════
+   PAGE 3 — AI AGENT
+══════════════════════════════════════ */
+#page-agent{display:none;flex-direction:row}
+#page-agent.active{display:flex}
+
+.agent-map{
+  flex:1;position:relative;
+  background:radial-gradient(ellipse 80% 70% at 45% 50%,#0f2843 0%,#0d1b2a 55%,#060e18 100%);
+  overflow:hidden;
+}
+.agent-map-grid{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(100,160,220,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(100,160,220,.04) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+#agentCanvas{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+
+/* Route line on agent map */
+.route-overlay{position:absolute;inset:0;pointer-events:none}
+
+.agent-panel{
+  width:380px;flex-shrink:0;background:var(--ink);display:flex;flex-direction:column;
+  border-left:1px solid rgba(255,255,255,.06);
+}
+.agent-panel-head{
+  padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.06);
+  display:flex;align-items:center;gap:10px;
+}
+.agent-avatar{
+  width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--coral),var(--lavender));
+  display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;
+}
+.agent-name{font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:#fff}
+.agent-status{font-size:11px;color:rgba(255,255,255,.4);margin-top:1px;display:flex;align-items:center;gap:4px}
+.status-dot{width:6px;height:6px;border-radius:50%;background:#52B788;animation:statusBlink 2s ease infinite}
+@keyframes statusBlink{0%,100%{opacity:1}50%{opacity:.3}}
+
+.chat-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.chat-body::-webkit-scrollbar{width:3px}
+.chat-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+
+.msg{display:flex;gap:8px;max-width:95%;animation:msgIn .2s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg-user{margin-left:auto;flex-direction:row-reverse}
+.msg-bubble{
+  padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.5;
+}
+.msg-user .msg-bubble{
+  background:rgba(231,111,81,.2);color:rgba(255,255,255,.9);
+  border:1px solid rgba(231,111,81,.3);border-radius:12px 12px 2px 12px;
+}
+.msg-agent .msg-bubble{
+  background:rgba(255,255,255,.07);color:rgba(255,255,255,.85);
+  border:1px solid rgba(255,255,255,.08);border-radius:12px 12px 12px 2px;
+}
+
+/* Itinerary card */
+.itin-card{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;padding:12px;margin-top:6px;
+}
+.itin-title{
+  font-family:'Fraunces',serif;font-size:14px;font-weight:600;
+  color:#fff;font-style:italic;margin-bottom:10px;
+}
+.itin-stop{
+  display:flex;align-items:flex-start;gap:8px;padding:6px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.itin-stop:last-child{border-bottom:none}
+.itin-num{
+  width:20px;height:20px;border-radius:50%;background:rgba(231,111,81,.2);
+  color:var(--coral);font-size:10px;font-weight:700;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.itin-city{font-size:13px;font-weight:600;color:#fff}
+.itin-days{font-size:11px;color:rgba(255,255,255,.45)}
+.itin-note{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px}
+.itin-rating{font-size:10px;color:var(--gold)}
+
+/* Suggestions */
+.suggestions{padding:8px 14px;display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid rgba(255,255,255,.06)}
+.sug{
+  padding:5px 11px;border-radius:16px;font-size:11px;font-weight:500;cursor:pointer;
+  background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);
+  border:1px solid rgba(255,255,255,.1);transition:all .15s;
+}
+.sug:hover{background:rgba(231,111,81,.15);color:rgba(255,255,255,.9);border-color:rgba(231,111,81,.4)}
+
+/* Input */
+.agent-input{
+  padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);
+  display:flex;gap:8px;align-items:flex-end;
+}
+.agent-input textarea{
+  flex:1;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.1);
+  border-radius:10px;padding:8px 12px;font-family:'DM Sans',sans-serif;
+  font-size:13px;color:#fff;resize:none;height:38px;line-height:1.4;outline:none;
+  transition:border-color .15s;
+}
+.agent-input textarea:focus{border-color:rgba(231,111,81,.5)}
+.agent-input textarea::placeholder{color:rgba(255,255,255,.25)}
+.send-btn{
+  width:38px;height:38px;border-radius:9px;background:var(--coral);border:none;
+  color:#fff;font-size:16px;cursor:pointer;flex-shrink:0;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;
+}
+.send-btn:hover{background:#d4623e;transform:translateY(-1px)}
+
+/* ══════════════════════════════════════
+   PAGE 4 — IMPORT
+══════════════════════════════════════ */
+#page-import{
+  background:var(--sand);overflow-y:auto;padding:32px;
+  display:none;align-items:flex-start;justify-content:center;
+}
+#page-import.active{display:flex}
+
+.import-wrap{width:100%;max-width:800px}
+.import-title{
+  font-family:'Fraunces',serif;font-size:28px;font-weight:700;color:var(--ink);
+  margin-bottom:4px;
+}
+.import-title em{font-style:italic;color:var(--forest)}
+.import-sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+
+/* Drop zone */
+.dropzone{
+  border:2px dashed rgba(0,0,0,.15);border-radius:16px;padding:48px 24px;
+  text-align:center;background:var(--cream);cursor:pointer;
+  transition:all .2s;margin-bottom:24px;
+}
+.dropzone:hover,.dropzone.over{border-color:var(--forest);background:rgba(45,106,79,.05)}
+.dz-icon{font-size:40px;margin-bottom:12px;filter:grayscale(.3)}
+.dz-title{font-family:'Fraunces',serif;font-size:18px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.dz-sub{font-size:13px;color:var(--muted)}
+.dz-sub strong{color:var(--forest);cursor:pointer}
+.dz-formats{
+  margin-top:12px;font-size:11px;color:var(--muted);
+  display:flex;justify-content:center;gap:8px;
+}
+.dz-fmt{
+  background:rgba(0,0,0,.06);padding:2px 8px;border-radius:6px;font-weight:600;
+}
+
+/* Source select */
+.import-options{
+  display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;
+}
+.opt-label{font-size:13px;font-weight:600;color:var(--ink);flex-shrink:0}
+.source-pills{display:flex;gap:8px;flex-wrap:wrap}
+.s-pill{
+  padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;
+  border:1.5px solid rgba(0,0,0,.1);background:#fff;color:var(--muted);transition:all .15s;
+}
+.s-pill:hover,.s-pill.sel{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* Preview table */
+.preview-wrap{background:var(--cream);border-radius:14px;border:1px solid rgba(0,0,0,.07);overflow:hidden;margin-bottom:20px}
+.preview-head{
+  padding:14px 18px;border-bottom:1px solid rgba(0,0,0,.07);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.preview-head-title{font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:var(--ink)}
+.preview-count{font-size:12px;color:var(--muted)}
+
+table{width:100%;border-collapse:collapse}
+th{
+  padding:10px 16px;text-align:left;font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  background:rgba(0,0,0,.03);border-bottom:1px solid rgba(0,0,0,.07);
+}
+td{padding:10px 16px;font-size:13px;color:var(--ink);border-bottom:1px solid rgba(0,0,0,.05)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,0,0,.02)}
+
+.td-status select{
+  padding:4px 8px;border-radius:7px;border:1.5px solid rgba(0,0,0,.1);
+  font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);
+  background:#fff;cursor:pointer;outline:none;
+}
+.td-coords{font-size:11px;color:var(--muted)}
+
+.import-footer{display:flex;justify-content:flex-end;gap:10px}
+.btn-primary{
+  background:var(--forest);color:#fff;border:none;border-radius:10px;
+  padding:11px 22px;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;
+  cursor:pointer;transition:all .15s;
+}
+.btn-primary:hover{background:#245a41;transform:translateY(-1px)}
+.btn-secondary{
+  background:transparent;color:var(--ink);border:1.5px solid rgba(0,0,0,.15);
+  border-radius:10px;padding:11px 22px;font-size:14px;font-weight:600;
+  font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;
+}
+.btn-secondary:hover{border-color:rgba(0,0,0,.3)}
+
+/* progress bar */
+.progress-wrap{margin-bottom:24px;display:none}
+.progress-label{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:6px;display:flex;justify-content:space-between}
+.progress-track{height:6px;background:rgba(0,0,0,.08);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:var(--forest);border-radius:3px;transition:width .3s ease}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="logo"><div class="logo-pin"></div>Pinfarer</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('map',this)">🗺 Map</button>
+    <button class="nav-tab" onclick="showPage('dash',this)">📊 Dashboard</button>
+    <button class="nav-tab" onclick="showPage('agent',this)">✦ AI Agent</button>
+    <button class="nav-tab" onclick="showPage('import',this)">⬆ Import</button>
+  </div>
+  <div class="nav-right">
+    <button class="nav-btn ghost" onclick="showPage('import',document.querySelectorAll('.nav-tab')[3])">+ Import KML</button>
+    <button class="nav-btn">+ Add Pin</button>
+  </div>
+</nav>
+
+<!-- ════════ PAGE: MAP ════════ -->
+<div class="page active" id="page-map">
+  <div class="map-bg" id="mapBg">
+    <div class="map-grid"></div>
+    <canvas id="globeCanvas" width="600" height="600"></canvas>
+
+    <!-- Flat map pins (hidden when globe is shown) -->
+    <div id="flatPins">
+      <div class="map-pin visited"  style="top:42%;left:47%" data-name="Paris"       data-s="Visited"></div>
+      <div class="map-pin visited"  style="top:56%;left:22%" data-name="Lisbon"      data-s="Visited"></div>
+      <div class="map-pin visited"  style="top:68%;left:76%" data-name="Melbourne"   data-s="Visited"></div>
+      <div class="map-pin visited"  style="top:40%;left:74%" data-name="Tokyo"       data-s="Visited"></div>
+      <div class="map-pin visited"  style="top:43%;left:26%" data-name="New York"    data-s="Visited"></div>
+      <div class="map-pin watchlist" style="top:50%;left:49%" data-name="Rome"       data-s="Watchlist"></div>
+      <div class="map-pin watchlist" style="top:62%;left:53%" data-name="Cairo"      data-s="Watchlist"></div>
+      <div class="map-pin watchlist" style="top:62%;left:72%" data-name="Bali"       data-s="Watchlist"></div>
+      <div class="map-pin watchlist" style="top:37%;left:59%" data-name="Istanbul"   data-s="Watchlist"></div>
+      <div class="map-pin dream"    style="top:30%;left:36%" data-name="Reykjavik"   data-s="Dream"></div>
+      <div class="map-pin dream"    style="top:58%;left:86%" data-name="Queenstown"  data-s="Dream"></div>
+      <div class="map-pin dream"    style="top:41%;left:62%" data-name="Tbilisi"     data-s="Dream"></div>
+      <div class="map-pin dream"    style="top:46%;left:67%" data-name="Samarkand"   data-s="Dream"></div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="chip chip-all active" onclick="setFilter('all',this)">All</div>
+      <div class="chip chip-v" onclick="setFilter('visited',this)">
+        <div class="chip-dot" style="background:var(--mint)"></div>Visited
+      </div>
+      <div class="chip chip-w" onclick="setFilter('watchlist',this)">
+        <div class="chip-dot" style="background:var(--amber)"></div>Watchlist
+      </div>
+      <div class="chip chip-d" onclick="setFilter('dream',this)">
+        <div class="chip-dot" style="background:var(--lavender)"></div>Dream
+      </div>
+    </div>
+
+    <div class="view-toggle">
+      <button class="vtbtn active" id="btnFlat"  onclick="setView('flat')">Flat Map</button>
+      <button class="vtbtn"        id="btnGlobe" onclick="setView('globe')">🌍 Globe</button>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sb-head">
+      <div class="sb-title">My Places <span class="sb-badge">13 pins</span></div>
+      <div class="sb-search">
+        <span class="sb-search-icon">⌕</span>
+        <input type="text" placeholder="Search places…" oninput="sbFilter(this.value)">
+      </div>
+    </div>
+    <div class="sb-list" id="sbList">
+      <div class="sb-section">✓ Visited · 5</div>
+      <div class="sb-item sel" data-s="visited"><div class="sb-dot" style="background:var(--mint)"></div><div class="sb-info"><div class="sb-name">Paris</div><div class="sb-meta">France · ▶ YouTube</div></div><span class="sb-pin-badge bv">Visited</span></div>
+      <div class="sb-item" data-s="visited"><div class="sb-dot" style="background:var(--mint)"></div><div class="sb-info"><div class="sb-name">Tokyo</div><div class="sb-meta">Japan · ✦ Self</div></div><span class="sb-pin-badge bv">Visited</span></div>
+      <div class="sb-item" data-s="visited"><div class="sb-dot" style="background:var(--mint)"></div><div class="sb-info"><div class="sb-name">Melbourne</div><div class="sb-meta">Australia · ✦ Self</div></div><span class="sb-pin-badge bv">Visited</span></div>
+      <div class="sb-item" data-s="visited"><div class="sb-dot" style="background:var(--mint)"></div><div class="sb-info"><div class="sb-name">New York</div><div class="sb-meta">United States · 📖 Book</div></div><span class="sb-pin-badge bv">Visited</span></div>
+      <div class="sb-item" data-s="visited"><div class="sb-dot" style="background:var(--mint)"></div><div class="sb-info"><div class="sb-name">Lisbon</div><div class="sb-meta">Portugal · ▶ YouTube</div></div><span class="sb-pin-badge bv">Visited</span></div>
+      <div class="sb-section">👁 Watchlist · 4</div>
+      <div class="sb-item" data-s="watchlist"><div class="sb-dot" style="background:var(--amber)"></div><div class="sb-info"><div class="sb-name">Rome</div><div class="sb-meta">Italy · ▶ YouTube</div></div><span class="sb-pin-badge bw">Watchlist</span></div>
+      <div class="sb-item" data-s="watchlist"><div class="sb-dot" style="background:var(--amber)"></div><div class="sb-info"><div class="sb-name">Istanbul</div><div class="sb-meta">Turkey · 📱 Xiaohongshu</div></div><span class="sb-pin-badge bw">Watchlist</span></div>
+      <div class="sb-item" data-s="watchlist"><div class="sb-dot" style="background:var(--amber)"></div><div class="sb-info"><div class="sb-name">Cairo</div><div class="sb-meta">Egypt · 📖 Book</div></div><span class="sb-pin-badge bw">Watchlist</span></div>
+      <div class="sb-item" data-s="watchlist"><div class="sb-dot" style="background:var(--amber)"></div><div class="sb-info"><div class="sb-name">Bali</div><div class="sb-meta">Indonesia · ▶ YouTube</div></div><span class="sb-pin-badge bw">Watchlist</span></div>
+      <div class="sb-section">✨ Dream · 4</div>
+      <div class="sb-item" data-s="dream"><div class="sb-dot" style="background:var(--lavender)"></div><div class="sb-info"><div class="sb-name">Reykjavik</div><div class="sb-meta">Iceland · 📱 WeChat</div></div><span class="sb-pin-badge bd">Dream</span></div>
+      <div class="sb-item" data-s="dream"><div class="sb-dot" style="background:var(--lavender)"></div><div class="sb-info"><div class="sb-name">Tbilisi</div><div class="sb-meta">Georgia · ▶ YouTube</div></div><span class="sb-pin-badge bd">Dream</span></div>
+      <div class="sb-item" data-s="dream"><div class="sb-dot" style="background:var(--lavender)"></div><div class="sb-info"><div class="sb-name">Queenstown</div><div class="sb-meta">New Zealand · 📖 Book</div></div><span class="sb-pin-badge bd">Dream</span></div>
+      <div class="sb-item" data-s="dream"><div class="sb-dot" style="background:var(--lavender)"></div><div class="sb-info"><div class="sb-name">Samarkand</div><div class="sb-meta">Uzbekistan · 📱 WeChat</div></div><span class="sb-pin-badge bd">Dream</span></div>
+    </div>
+    <div class="sb-stats">
+      <div><div class="sb-stat-n">9</div><div class="sb-stat-l">Countries</div></div>
+      <div><div class="sb-stat-n">13</div><div class="sb-stat-l">Total Pins</div></div>
+      <div><div class="sb-stat-n">5</div><div class="sb-stat-l">Visited</div></div>
+      <div><div class="sb-stat-n">4</div><div class="sb-stat-l">Watchlist</div></div>
+    </div>
+  </aside>
+</div>
+
+<!-- ════════ PAGE: DASHBOARD ════════ -->
+<div class="page" id="page-dash">
+  <div class="dash-header">
+    <div>
+      <div class="dash-title">Your Travel <em>Story</em></div>
+      <div class="dash-subtitle">Updated just now · 13 pins across 9 countries</div>
+    </div>
+    <button class="nav-btn" style="background:var(--ink);color:#fff">Share Dashboard</button>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-card kpi-v">
+      <div class="kpi-icon">✓</div>
+      <div class="kpi-num">5</div>
+      <div class="kpi-label">Places Visited</div>
+    </div>
+    <div class="kpi-card kpi-w">
+      <div class="kpi-icon">👁</div>
+      <div class="kpi-num">4</div>
+      <div class="kpi-label">On Watchlist</div>
+    </div>
+    <div class="kpi-card kpi-d">
+      <div class="kpi-icon">✨</div>
+      <div class="kpi-num">4</div>
+      <div class="kpi-label">Dream Places</div>
+    </div>
+    <div class="kpi-card kpi-c">
+      <div class="kpi-icon">🌍</div>
+      <div class="kpi-num">9</div>
+      <div class="kpi-label">Countries</div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">Pins by Region</div>
+      <div class="bar-chart">
+        <div class="bar-row"><span class="bar-label">Europe</span><div class="bar-track"><div class="bar-fill" style="width:70%;background:var(--coral)"></div></div><span class="bar-count">5</span></div>
+        <div class="bar-row"><span class="bar-label">East Asia</span><div class="bar-track"><div class="bar-fill" style="width:28%;background:var(--mint)"></div></div><span class="bar-count">2</span></div>
+        <div class="bar-row"><span class="bar-label">SE Asia</span><div class="bar-track"><div class="bar-fill" style="width:28%;background:var(--amber)"></div></div><span class="bar-count">2</span></div>
+        <div class="bar-row"><span class="bar-label">Oceania</span><div class="bar-track"><div class="bar-fill" style="width:28%;background:var(--lavender)"></div></div><span class="bar-count">2</span></div>
+        <div class="bar-row"><span class="bar-label">Americas</span><div class="bar-track"><div class="bar-fill" style="width:14%;background:var(--gold)"></div></div><span class="bar-count">1</span></div>
+        <div class="bar-row"><span class="bar-label">C. Asia</span><div class="bar-track"><div class="bar-fill" style="width:14%;background:#a8d8ea"></div></div><span class="bar-count">1</span></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Discovery Sources</div>
+      <div class="donut-wrap">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="45" fill="none" stroke="rgba(0,0,0,.07)" stroke-width="18"/>
+          <!-- YouTube 46% -->
+          <circle cx="60" cy="60" r="45" fill="none" stroke="#E76F51" stroke-width="18"
+            stroke-dasharray="130 282" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+          <!-- Book 23% -->
+          <circle cx="60" cy="60" r="45" fill="none" stroke="#9B89C4" stroke-width="18"
+            stroke-dasharray="65 282" stroke-dashoffset="-130" transform="rotate(-90 60 60)"/>
+          <!-- WeChat 15% -->
+          <circle cx="60" cy="60" r="45" fill="none" stroke="#52B788" stroke-width="18"
+            stroke-dasharray="42 282" stroke-dashoffset="-195" transform="rotate(-90 60 60)"/>
+          <!-- Self 15% -->
+          <circle cx="60" cy="60" r="45" fill="none" stroke="#F4A261" stroke-width="18"
+            stroke-dasharray="45 282" stroke-dashoffset="-237" transform="rotate(-90 60 60)"/>
+          <text x="60" y="64" text-anchor="middle" font-family="Fraunces,serif" font-size="18" font-weight="700" fill="#1A1A2E">13</text>
+        </svg>
+        <div class="donut-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--coral)"></div>YouTube<span class="legend-pct">46%</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--lavender)"></div>Books<span class="legend-pct">23%</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--mint)"></div>WeChat<span class="legend-pct">15%</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Self<span class="legend-pct">15%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ai-card">
+    <div class="ai-card-title">
+      AI Recommendations <span class="ai-tag">✦ Claude</span>
+    </div>
+    <div class="ai-sub">Based on your Watchlist pattern — you love old cities with great food & history</div>
+    <div class="ai-recs">
+      <div class="ai-rec">
+        <div class="ai-rec-city">Tbilisi</div>
+        <div class="ai-rec-country">Georgia · Caucasus</div>
+        <div class="ai-rec-reason">Wine culture, ancient churches, and a vibrant café scene — matches your Istanbul interest perfectly.</div>
+        <div class="ai-rec-score">★ 4.7 · Google Places</div>
+      </div>
+      <div class="ai-rec">
+        <div class="ai-rec-city">Thessaloniki</div>
+        <div class="ai-rec-country">Greece · Balkans</div>
+        <div class="ai-rec-reason">Underrated alternative to Athens — incredible Byzantine history, street food, and seaside energy.</div>
+        <div class="ai-rec-score">★ 4.6 · Google Places</div>
+      </div>
+      <div class="ai-rec">
+        <div class="ai-rec-city">Chiang Mai</div>
+        <div class="ai-rec-country">Thailand · SE Asia</div>
+        <div class="ai-rec-reason">Natural bridge between your Bali and Cairo interests — temples, mountains, and food markets.</div>
+        <div class="ai-rec-score">★ 4.8 · Google Places</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ PAGE: AGENT ════════ -->
+<div class="page" id="page-agent">
+  <div class="agent-map">
+    <div class="agent-map-grid"></div>
+    <canvas id="agentCanvas" width="500" height="500"></canvas>
+    <!-- Route SVG overlay -->
+    <svg class="route-overlay" id="routeSvg">
+      <defs>
+        <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L6,3 z" fill="rgba(231,111,81,.6)"/>
+        </marker>
+      </defs>
+      <!-- Animated route line -->
+      <path id="routePath" d="M 150,220 Q 220,160 310,190 Q 360,180 420,200"
+        fill="none" stroke="rgba(231,111,81,.5)" stroke-width="1.5" stroke-dasharray="6,4"
+        marker-end="url(#arrowhead)"/>
+    </svg>
+    <!-- City dots on agent map -->
+    <div style="position:absolute;top:220px;left:150px;width:8px;height:8px;border-radius:50%;background:var(--coral);box-shadow:0 0 8px rgba(231,111,81,.7);transform:translate(-50%,-50%)"></div>
+    <div style="position:absolute;top:190px;left:310px;width:8px;height:8px;border-radius:50%;background:var(--coral);box-shadow:0 0 8px rgba(231,111,81,.7);transform:translate(-50%,-50%)"></div>
+    <div style="position:absolute;top:200px;left:420px;width:8px;height:8px;border-radius:50%;background:var(--coral);box-shadow:0 0 8px rgba(231,111,81,.7);transform:translate(-50%,-50%)"></div>
+  </div>
+
+  <div class="agent-panel">
+    <div class="agent-panel-head">
+      <div class="agent-avatar">✦</div>
+      <div>
+        <div class="agent-name">Pinfarer Agent</div>
+        <div class="agent-status"><span class="status-dot"></span>Ready to plan your journey</div>
+      </div>
+    </div>
+
+    <div class="chat-body" id="chatBody">
+      <div class="msg msg-agent">
+        <div class="msg-bubble">
+          Hi! I've loaded your 13 saved places. Tell me where you want to go — days, budget, vibe — and I'll craft a personalised itinerary from your Watchlist. ✦
+        </div>
+      </div>
+      <div class="msg msg-user">
+        <div class="msg-bubble">
+          10 days, starting from Melbourne. I love old cities with good food. Budget is around $3k AUD.
+        </div>
+      </div>
+      <div class="msg msg-agent">
+        <div class="msg-bubble">
+          Perfect — you've got Rome, Istanbul, and Cairo on your Watchlist. Here's a 10-day route I'd suggest:
+          <div class="itin-card">
+            <div class="itin-title">Southern Mediterranean Loop</div>
+            <div class="itin-stop">
+              <div class="itin-num">1</div>
+              <div><div class="itin-city">Istanbul <span style="color:rgba(255,255,255,.4);font-weight:400;font-size:12px">Turkey</span></div><div class="itin-days">3 days</div><div class="itin-note">Hagia Sophia, Grand Bazaar, Bosphorus cruise, Karaköy street food</div><div class="itin-rating">★ 4.8</div></div>
+            </div>
+            <div class="itin-stop">
+              <div class="itin-num">2</div>
+              <div><div class="itin-city">Rome <span style="color:rgba(255,255,255,.4);font-weight:400;font-size:12px">Italy</span></div><div class="itin-days">4 days</div><div class="itin-note">Vatican, Trastevere trattorias, ancient forums, evening aperitivo</div><div class="itin-rating">★ 4.7</div></div>
+            </div>
+            <div class="itin-stop">
+              <div class="itin-num">3</div>
+              <div><div class="itin-city">Cairo <span style="color:rgba(255,255,255,.4);font-weight:400;font-size:12px">Egypt</span></div><div class="itin-days">3 days</div><div class="itin-note">Pyramids day trip, Khan el-Khalili, Islamic Cairo, koshary lunch</div><div class="itin-rating">★ 4.6</div></div>
+            </div>
+          </div>
+          Want to swap any city or adjust days?
+        </div>
+      </div>
+    </div>
+
+    <div class="suggestions">
+      <div class="sug" onclick="addMsg(this)">Add a beach stop</div>
+      <div class="sug" onclick="addMsg(this)">Remove Cairo</div>
+      <div class="sug" onclick="addMsg(this)">More food focus</div>
+      <div class="sug" onclick="addMsg(this)">Save this trip</div>
+    </div>
+
+    <div class="agent-input">
+      <textarea placeholder="Ask anything — change cities, adjust days…" id="agentTA" rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
+      <button class="send-btn" onclick="sendMsg()">↑</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ PAGE: IMPORT ════════ -->
+<div class="page" id="page-import">
+  <div class="import-wrap">
+    <div class="import-title">Import from <em>Google Maps</em></div>
+    <div class="import-sub">Upload your Google Takeout KML export to bring in saved places</div>
+
+    <div class="dropzone" id="dz" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)" onclick="document.getElementById('fileIn').click()">
+      <input type="file" id="fileIn" accept=".kml" style="display:none" onchange="dzFile(this)">
+      <div class="dz-icon">📍</div>
+      <div class="dz-title">Drop your KML file here</div>
+      <div class="dz-sub">or <strong>browse files</strong> from your computer</div>
+      <div class="dz-formats">
+        <span class="dz-fmt">KML</span>
+        <span>from Google Takeout → Maps → Saved Places</span>
+      </div>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label"><span>Parsing KML…</span><span id="progressPct">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+
+    <div class="import-options">
+      <span class="opt-label">Default source:</span>
+      <div class="source-pills">
+        <div class="s-pill sel" onclick="selPill(this)">Unknown</div>
+        <div class="s-pill" onclick="selPill(this)">▶ YouTube</div>
+        <div class="s-pill" onclick="selPill(this)">📱 WeChat</div>
+        <div class="s-pill" onclick="selPill(this)">📱 Xiaohongshu</div>
+        <div class="s-pill" onclick="selPill(this)">📖 Book</div>
+        <div class="s-pill" onclick="selPill(this)">✦ Self</div>
+      </div>
+    </div>
+
+    <div class="preview-wrap">
+      <div class="preview-head">
+        <span class="preview-head-title">Preview — 6 places found</span>
+        <span class="preview-count">Edit status before importing</span>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Name</th><th>Coordinates</th><th>Status</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Colosseum</td><td class="td-coords">41.8902, 12.4922</td><td class="td-status"><select><option>watchlist</option><option>visited</option><option>dream</option></select></td><td>Unknown</td></tr>
+          <tr><td>2</td><td>Hagia Sophia</td><td class="td-coords">41.0086, 28.9802</td><td class="td-status"><select><option>watchlist</option><option>visited</option><option>dream</option></select></td><td>Unknown</td></tr>
+          <tr><td>3</td><td>Pyramids of Giza</td><td class="td-coords">29.9792, 31.1342</td><td class="td-status"><select><option selected>dream</option><option>visited</option><option>watchlist</option></select></td><td>Unknown</td></tr>
+          <tr><td>4</td><td>Sagrada Família</td><td class="td-coords">41.4036, 2.1744</td><td class="td-status"><select><option>watchlist</option><option>visited</option><option>dream</option></select></td><td>Unknown</td></tr>
+          <tr><td>5</td><td>Shibuya Crossing</td><td class="td-coords">35.6590, 139.7006</td><td class="td-status"><select><option selected>visited</option><option>watchlist</option><option>dream</option></select></td><td>Unknown</td></tr>
+          <tr><td>6</td><td>Queenstown</td><td class="td-coords">-45.0312, 168.6626</td><td class="td-status"><select><option selected>dream</option><option>visited</option><option>watchlist</option></select></td><td>Unknown</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="import-footer">
+      <button class="btn-secondary">Cancel</button>
+      <button class="btn-primary" onclick="fakeImport()">Import 6 Places →</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tt"><div id="tt-name"></div><div class="tt-sub" id="tt-sub"></div></div>
+
+<script>
+// ── PAGE SWITCHING ──
+function showPage(id, tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  tab.classList.add('active');
+  if (id === 'agent') initAgentGlobe();
+}
+
+// ── GLOBE RENDERER ──
+const PINS = [
+  {lat:48.8566, lng:2.3522,  s:'visited',  name:'Paris'},
+  {lat:35.6762, lng:139.6503,s:'visited',  name:'Tokyo'},
+  {lat:-37.8136,lng:144.9631,s:'visited',  name:'Melbourne'},
+  {lat:40.7128, lng:-74.0060,s:'visited',  name:'New York'},
+  {lat:38.7223, lng:-9.1393, s:'visited',  name:'Lisbon'},
+  {lat:41.9028, lng:12.4964, s:'watchlist',name:'Rome'},
+  {lat:41.0082, lng:28.9784, s:'watchlist',name:'Istanbul'},
+  {lat:30.0444, lng:31.2357, s:'watchlist',name:'Cairo'},
+  {lat:-8.4095, lng:115.1889,s:'watchlist',name:'Bali'},
+  {lat:64.1466, lng:-21.9426,s:'dream',    name:'Reykjavik'},
+  {lat:-45.0312,lng:168.6626,s:'dream',    name:'Queenstown'},
+  {lat:41.7151, lng:44.8271, s:'dream',    name:'Tbilisi'},
+  {lat:39.6547, lng:66.9758, s:'dream',    name:'Samarkand'},
+];
+const PIN_COLORS = {visited:'#52B788', watchlist:'#F4A261', dream:'#9B89C4'};
+
+function drawGlobe(canvasId, W, autoRotate) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let rotY = 0, rotX = 0.25;
+  let dragging = false, lastX = 0, lastY = 0;
+  let velX = 0, velY = 0.003;
+
+  canvas.addEventListener('mousedown', e => { dragging=true; lastX=e.clientX; lastY=e.clientY; velX=velY=0; });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    velX = (e.clientY - lastY) * 0.005;
+    velY = (e.clientX - lastX) * 0.005;
+    rotX += velX; rotY += velY;
+    lastX=e.clientX; lastY=e.clientY;
+  });
+  document.addEventListener('mouseup', () => { dragging=false; });
+
+  const cx = W/2, cy = W/2, R = W*0.38;
+
+  function project(lat, lng) {
+    const phi = lat * Math.PI/180;
+    const lam = (lng * Math.PI/180) + rotY;
+    const x = Math.cos(phi)*Math.sin(lam);
+    const y = Math.sin(phi)*Math.cos(rotX) - Math.cos(phi)*Math.cos(lam)*Math.sin(rotX);
+    const z = Math.sin(phi)*Math.sin(rotX) + Math.cos(phi)*Math.cos(lam)*Math.cos(rotX);
+    return { sx: cx + R*x, sy: cy - R*y, vis: z > 0, z };
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,W,W);
+
+    // Atmosphere glow
+    const grad = ctx.createRadialGradient(cx,cy,R*0.85,cx,cy,R*1.18);
+    grad.addColorStop(0,'rgba(30,80,140,0)');
+    grad.addColorStop(0.7,'rgba(30,80,140,0.08)');
+    grad.addColorStop(1,'rgba(10,40,90,0.18)');
+    ctx.beginPath(); ctx.arc(cx,cy,R*1.18,0,Math.PI*2);
+    ctx.fillStyle=grad; ctx.fill();
+
+    // Globe base
+    const baseGrad = ctx.createRadialGradient(cx-R*0.2,cy-R*0.2,R*0.1,cx,cy,R);
+    baseGrad.addColorStop(0,'#1a3a5c');
+    baseGrad.addColorStop(0.5,'#0f2540');
+    baseGrad.addColorStop(1,'#07151f');
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.fillStyle=baseGrad; ctx.fill();
+
+    // Grid lines
+    ctx.lineWidth=0.5;
+    // Latitude lines
+    for (let lat=-60; lat<=60; lat+=30) {
+      ctx.beginPath(); let first=true;
+      for (let lng=-180; lng<=180; lng+=4) {
+        const {sx,sy,vis,z}=project(lat,lng);
+        if (!vis) { first=true; continue; }
+        if (first) { ctx.moveTo(sx,sy); first=false; }
+        else ctx.lineTo(sx,sy);
+      }
+      ctx.strokeStyle='rgba(100,160,220,0.12)'; ctx.stroke();
+    }
+    // Longitude lines
+    for (let lng=-180; lng<180; lng+=30) {
+      ctx.beginPath(); let first=true;
+      for (let lat=-80; lat<=80; lat+=3) {
+        const {sx,sy,vis}=project(lat,lng);
+        if (!vis) { first=true; continue; }
+        if (first) { ctx.moveTo(sx,sy); first=false; }
+        else ctx.lineTo(sx,sy);
+      }
+      ctx.strokeStyle='rgba(100,160,220,0.08)'; ctx.stroke();
+    }
+
+    // Globe edge
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.strokeStyle='rgba(100,180,255,0.15)'; ctx.lineWidth=1; ctx.stroke();
+
+    // Pins
+    PINS.forEach(pin => {
+      const {sx,sy,vis,z}=project(pin.lat,pin.lng);
+      if (!vis) return;
+      const col=PIN_COLORS[pin.s]||'#fff';
+      const alpha=0.4+0.6*z;
+      const r=pin.s==='visited'?4.5:3.5;
+      // Glow
+      const pg=ctx.createRadialGradient(sx,sy,0,sx,sy,r*3);
+      pg.addColorStop(0,col.replace(')',`,${alpha*0.5})`).replace('rgb','rgba').replace('#','rgba('+parseInt(col.slice(1,3),16)+','+parseInt(col.slice(3,5),16)+','+parseInt(col.slice(5,7),16)+','));
+      // simple glow
+      ctx.beginPath(); ctx.arc(sx,sy,r*2.5,0,Math.PI*2);
+      ctx.fillStyle=col+'28'; ctx.fill();
+      // dot
+      ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2);
+      ctx.fillStyle=col; ctx.globalAlpha=alpha; ctx.fill();
+      ctx.globalAlpha=1;
+      ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1;
+      ctx.stroke();
+    });
+
+    // Specular highlight
+    const spec=ctx.createRadialGradient(cx-R*0.3,cy-R*0.35,0,cx-R*0.3,cy-R*0.35,R*0.6);
+    spec.addColorStop(0,'rgba(255,255,255,0.04)');
+    spec.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.fillStyle=spec; ctx.fill();
+
+    if (!dragging && autoRotate) velY=0.004;
+    rotX+=velX*0.92; rotY+=velY;
+    velX*=0.9; if (!autoRotate) velY*=0.92;
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// Init map globe
+let mapGlobeInit=false;
+function initMapGlobe() {
+  if (mapGlobeInit) return; mapGlobeInit=true;
+  drawGlobe('globeCanvas', 600, true);
+}
+
+let agentGlobeInit=false;
+function initAgentGlobe() {
+  if (agentGlobeInit) return; agentGlobeInit=true;
+  drawGlobe('agentCanvas', 500, true);
+}
+
+// Start map globe immediately
+initMapGlobe();
+
+// ── VIEW TOGGLE (flat/globe) ──
+function setView(v) {
+  const fp=document.getElementById('flatPins');
+  const gc=document.getElementById('globeCanvas');
+  if (v==='globe') {
+    fp.style.display='none'; gc.style.display='block';
+    document.getElementById('btnFlat').classList.remove('active');
+    document.getElementById('btnGlobe').classList.add('active');
+  } else {
+    fp.style.display='block'; gc.style.display='none';
+    document.getElementById('btnFlat').classList.add('active');
+    document.getElementById('btnGlobe').classList.remove('active');
+  }
+}
+// Default: flat map, globe hidden
+document.getElementById('globeCanvas').style.display='none';
+
+// ── TOOLTIP ──
+const tt=document.getElementById('tt');
+document.querySelectorAll('.map-pin').forEach(p=>{
+  p.addEventListener('mouseenter',e=>{
+    document.getElementById('tt-name').textContent=p.dataset.name;
+    document.getElementById('tt-sub').textContent=p.dataset.s;
+    tt.classList.add('on');
+  });
+  p.addEventListener('mousemove',e=>{tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY-10)+'px'});
+  p.addEventListener('mouseleave',()=>tt.classList.remove('on'));
+});
+
+// ── FILTER CHIPS ──
+function setFilter(type, el) {
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.map-pin').forEach(p=>{
+    const ok=type==='all'||p.classList.contains(type);
+    p.style.opacity=ok?'1':'0.12'; p.style.pointerEvents=ok?'auto':'none';
+  });
+  document.querySelectorAll('.sb-item').forEach(i=>{
+    i.style.display=(type==='all'||i.dataset.s===type)?'':'none';
+  });
+}
+
+// ── SIDEBAR SEARCH ──
+function sbFilter(q) {
+  q=q.toLowerCase();
+  document.querySelectorAll('.sb-item').forEach(i=>{
+    i.style.display=i.querySelector('.sb-name').textContent.toLowerCase().includes(q)?'':'none';
+  });
+}
+
+document.querySelectorAll('.sb-item').forEach(i=>{
+  i.addEventListener('click',()=>{
+    document.querySelectorAll('.sb-item').forEach(x=>x.classList.remove('sel'));
+    i.classList.add('sel');
+  });
+});
+
+// ── AGENT CHAT ──
+function sendMsg() {
+  const ta=document.getElementById('agentTA');
+  const text=ta.value.trim(); if (!text) return;
+  ta.value='';
+  const body=document.getElementById('chatBody');
+  const um=document.createElement('div');
+  um.className='msg msg-user';
+  um.innerHTML=`<div class="msg-bubble">${text}</div>`;
+  body.appendChild(um);
+  // fake typing
+  setTimeout(()=>{
+    const am=document.createElement('div');
+    am.className='msg msg-agent';
+    am.innerHTML=`<div class="msg-bubble">Got it! Let me update your itinerary based on that… ✦</div>`;
+    body.appendChild(am);
+    body.scrollTop=body.scrollHeight;
+  },800);
+  body.scrollTop=body.scrollHeight;
+}
+function addMsg(el) {
+  document.getElementById('agentTA').value=el.textContent;
+  sendMsg();
+}
+
+// ── IMPORT ──
+function dzOver(e){e.preventDefault();document.getElementById('dz').classList.add('over')}
+function dzLeave(){document.getElementById('dz').classList.remove('over')}
+function dzDrop(e){e.preventDefault();dzLeave();fakeProgress()}
+function dzFile(i){if(i.files.length)fakeProgress()}
+function fakeProgress(){
+  const pw=document.getElementById('progressWrap');
+  const pf=document.getElementById('progressFill');
+  const pp=document.getElementById('progressPct');
+  pw.style.display='block';
+  let v=0;
+  const iv=setInterval(()=>{v+=Math.random()*18;if(v>=100){v=100;clearInterval(iv)}
+    pf.style.width=v+'%';pp.textContent=Math.round(v)+'%';
+  },120);
+}
+function selPill(el){document.querySelectorAll('.s-pill').forEach(p=>p.classList.remove('sel'));el.classList.add('sel')}
+function fakeImport(){
+  const btn=document.querySelector('.btn-primary');
+  btn.textContent='✓ Imported!';btn.style.background='var(--mint)';
+  setTimeout(()=>{btn.textContent='Import 6 Places →';btn.style.background='';},2000);
+}
+</script>
+</body>
+</html>
