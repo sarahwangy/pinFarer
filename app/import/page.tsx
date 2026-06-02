@@ -1,0 +1,179 @@
+'use client'
+import { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { parseKML } from '@/lib/kml-parser'
+import ImportTable from '@/components/ImportTable'
+import type { ParsedPin, PinSource, PinStatus } from '@/types/pin'
+
+const SOURCES: { value: PinSource; label: string }[] = [
+  { value: 'unknown',     label: '未知' },
+  { value: 'youtube',     label: '▶ YouTube' },
+  { value: 'wechat',      label: '📱 微信公众号' },
+  { value: 'xiaohongshu', label: '📱 小红书' },
+  { value: 'book',        label: '📖 书籍' },
+  { value: 'self',        label: '✦ 自己探索' },
+]
+
+export default function ImportPage() {
+  const router = useRouter()
+  const [rows, setRows] = useState<ParsedPin[]>([])
+  const [source, setSource] = useState<PinSource>('unknown')
+  const [isDragging, setIsDragging] = useState(false)
+  const [importStatus, setImportStatus] = useState<'idle' | 'importing' | 'done'>('idle')
+  const [progress, setProgress] = useState(0)
+
+  const handleFile = useCallback(async (file: File) => {
+    const text = await file.text()
+    const parsed = parseKML(text)
+    setRows(parsed.map(p => ({ ...p, source })))
+  }, [source])
+
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file?.name.endsWith('.kml')) handleFile(file)
+  }, [handleFile])
+
+  const onFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) handleFile(file)
+  }, [handleFile])
+
+  const updateRowStatus = useCallback((index: number, newStatus: PinStatus) => {
+    setRows(prev => prev.map((r, i) => i === index ? { ...r, status: newStatus } : r))
+  }, [])
+
+  const handleImport = async () => {
+    setImportStatus('importing')
+    setProgress(0)
+    const body = rows.map(r => ({
+      name: r.name, lat: r.lat, lng: r.lng,
+      status: r.status, source,
+    }))
+
+    const iv = setInterval(() => setProgress(p => Math.min(p + 15, 90)), 150)
+
+    const res = await fetch('/api/pins', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    clearInterval(iv)
+    setProgress(100)
+
+    if (res.ok) {
+      setImportStatus('done')
+      setTimeout(() => router.push('/'), 1200)
+    } else {
+      setImportStatus('idle')
+      alert('导入失败，请重试')
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F7F3EE]">
+      <nav className="fixed top-0 left-0 right-0 h-[54px] bg-white/[0.97] backdrop-blur-md
+        border-b border-black/[0.07] shadow-sm flex items-center px-5 z-50">
+        <div className="font-serif text-[20px] font-bold text-[var(--ink)] flex items-center gap-2 mr-8">
+          <span className="w-2.5 h-2.5 rounded-full bg-[var(--coral)]" />
+          Pinfarer
+        </div>
+        <button onClick={() => router.push('/')}
+          className="text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition-colors">
+          ← 返回地图
+        </button>
+      </nav>
+
+      <div className="max-w-3xl mx-auto pt-[86px] pb-12 px-6">
+        <h1 className="font-serif text-[28px] font-bold text-[var(--ink)] mb-1">
+          从 <em className="italic text-[var(--forest)]">Google 地图</em> 导入
+        </h1>
+        <p className="text-[13px] text-[var(--muted)] mb-6">
+          上传 Google Takeout 导出的 KML 文件，批量导入收藏地点
+        </p>
+
+        <div
+          onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={onDrop}
+          onClick={() => document.getElementById('fileInput')?.click()}
+          className={`rounded-2xl border-2 border-dashed text-center px-6 py-12 cursor-pointer
+            transition-all mb-6
+            ${isDragging
+              ? 'border-[var(--forest)] bg-[var(--forest)]/5'
+              : 'border-black/15 bg-white hover:border-[var(--forest)]/50'
+            }`}
+        >
+          <input id="fileInput" type="file" accept=".kml" className="hidden" onChange={onFileInput} />
+          <div className="text-4xl mb-3">📍</div>
+          <div className="font-serif text-[18px] font-semibold text-[var(--ink)] mb-1.5">
+            将 KML 文件拖拽到此处
+          </div>
+          <div className="text-[13px] text-[var(--muted)]">
+            或 <span className="text-[var(--forest)] font-semibold">点击选择文件</span>
+          </div>
+          <div className="mt-3 flex justify-center gap-2 items-center">
+            <span className="text-[11px] bg-black/[0.06] px-2 py-0.5 rounded font-semibold text-[var(--muted)]">KML</span>
+            <span className="text-[11px] text-[var(--muted)]">来自 Google Takeout → 地图 → 已保存地点</span>
+          </div>
+        </div>
+
+        {importStatus === 'importing' && (
+          <div className="mb-6">
+            <div className="flex justify-between text-[13px] font-medium text-[var(--ink)] mb-1.5">
+              <span>正在导入…</span><span>{progress}%</span>
+            </div>
+            <div className="h-1.5 bg-black/[0.08] rounded-full overflow-hidden">
+              <div className="h-full bg-[var(--forest)] rounded-full transition-[width] duration-300"
+                style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        )}
+
+        {rows.length > 0 && (
+          <div className="flex items-center gap-4 mb-5 flex-wrap">
+            <span className="text-[13px] font-semibold text-[var(--ink)]">默认来源：</span>
+            <div className="flex gap-2 flex-wrap">
+              {SOURCES.map(s => (
+                <button key={s.value} onClick={() => setSource(s.value)}
+                  className={`px-3.5 py-1.5 rounded-full text-[12px] font-semibold border transition-all
+                    ${source === s.value
+                      ? 'bg-[var(--ink)] text-white border-[var(--ink)]'
+                      : 'bg-white text-[var(--muted)] border-black/10 hover:border-black/25'
+                    }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <ImportTable rows={rows} onChange={updateRowStatus} />
+
+        {rows.length > 0 && (
+          <div className="flex justify-end gap-3">
+            <button onClick={() => router.push('/')}
+              className="px-5 py-2.5 rounded-xl border border-black/15 text-[14px] font-semibold
+                text-[var(--ink)] hover:border-black/30 transition-colors">
+              取消
+            </button>
+            <button
+              onClick={handleImport}
+              disabled={importStatus !== 'idle'}
+              className={`px-5 py-2.5 rounded-xl text-[14px] font-semibold text-white transition-all
+                ${importStatus === 'done'
+                  ? 'bg-[var(--mint)]'
+                  : 'bg-[var(--forest)] hover:bg-[#245a41] hover:-translate-y-px disabled:opacity-60'
+                }`}
+            >
+              {importStatus === 'done' ? '✓ 导入成功！' : `导入 ${rows.length} 个地点 →`}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
