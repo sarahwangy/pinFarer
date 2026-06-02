@@ -29,7 +29,7 @@ export default function Map({ pins, onPinClick }: MapProps) {
 
       const map = new mapboxgl.Map({
         container: containerRef.current!,
-        style: 'mapbox://styles/mapbox/light-v11',
+        style: 'mapbox://styles/mapbox/outdoors-v12',
         center: [20, 20],
         zoom: 1.8,
         projection: 'globe' as any,
@@ -37,7 +37,13 @@ export default function Map({ pins, onPinClick }: MapProps) {
       mapRef.current = map
 
       map.on('load', () => {
-        map.setFog({ color: '#e8f3f8', 'high-color': '#c8e4f0', 'horizon-blend': 0.05 })
+        map.setFog({
+          color: '#a8d4f0',
+          'high-color': '#1a3a6e',
+          'horizon-blend': 0.08,
+          'space-color': '#0a0f2e',
+          'star-intensity': 0.6,
+        })
       })
     }
 
