@@ -145,19 +145,26 @@ export default function ImportPage() {
         </p>
 
         {/* Drop zone */}
-        <div
+        <label
+          htmlFor="fileInput"
           onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={onDrop}
-          onClick={() => !isWorking && document.getElementById('fileInput')?.click()}
-          className={`rounded-2xl border-2 border-dashed text-center px-6 py-12 cursor-pointer
+          className={`block rounded-2xl border-2 border-dashed text-center px-6 py-12
             transition-all mb-6
-            ${isDragging ? 'border-[var(--forest)] bg-[var(--forest)]/5'
-              : isWorking ? 'border-black/10 bg-white cursor-default'
-              : 'border-black/15 bg-white hover:border-[var(--forest)]/50'
+            ${isWorking ? 'cursor-default border-black/10 bg-white'
+              : isDragging ? 'cursor-copy border-[var(--forest)] bg-[var(--forest)]/5'
+              : 'cursor-pointer border-black/15 bg-white hover:border-[var(--forest)]/50'
             }`}
         >
-          <input id="fileInput" type="file" accept=".kml,.json,.csv" className="hidden" onChange={onFileInput} />
+          <input
+            id="fileInput"
+            type="file"
+            accept=".kml,.json,.csv"
+            className="hidden"
+            disabled={isWorking}
+            onChange={onFileInput}
+          />
           <div className="text-4xl mb-3">📍</div>
           <div className="font-serif text-[18px] font-semibold text-[var(--ink)] mb-1.5">
             将文件拖拽到此处
@@ -170,7 +177,7 @@ export default function ImportPage() {
               <span key={f} className="text-[11px] bg-black/[0.06] px-2 py-0.5 rounded font-semibold text-[var(--muted)]">{f}</span>
             ))}
           </div>
-        </div>
+        </label>
 
         {/* Progress (geocoding or importing) */}
         {isWorking && (
