@@ -69,8 +69,8 @@ export default async function PlaceDetailPage({ params }: { params: { id: string
         {/* Left column — 2/3 width */}
         <div className="col-span-2 flex flex-col gap-6">
 
-          {/* AI Summary — full text */}
-          {pin.ai_summary && (
+          {/* AI Summary — full text, or empty state */}
+          {pin.ai_summary ? (
             <div className="bg-[var(--ink)] rounded-2xl border border-white/[0.06] shadow-sm px-6 py-5">
               <div className="flex items-center gap-2 mb-3">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">
@@ -84,6 +84,26 @@ export default async function PlaceDetailPage({ params }: { params: { id: string
               <p className="text-[13px] text-white/80 leading-relaxed whitespace-pre-wrap">
                 {pin.ai_summary}
               </p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-dashed border-black/[0.15] px-6 py-10 text-center">
+              <div className="text-3xl mb-3">✦</div>
+              <p className="text-[14px] font-semibold text-[var(--ink)] mb-1">还没有 AI 介绍</p>
+              <p className="text-[13px] text-[var(--muted)] mb-4">
+                返回详情页，点击「生成介绍」按钮，Claude 会自动生成城市介绍和{' '}
+                {pin.name.match(/\d+|\b(street|st|avenue|ave|road|rd)\b/i) || /[号室栋]/.test(pin.name)
+                  ? '房产信息'
+                  : '城市数据'}
+                。
+              </p>
+              <Link
+                href={`/place/${pin.id}`}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl
+                  bg-[var(--coral)] text-white text-[13px] font-semibold
+                  hover:bg-[#d4623e] transition-colors"
+              >
+                ← 去生成介绍
+              </Link>
             </div>
           )}
 
