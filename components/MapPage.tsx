@@ -32,7 +32,8 @@ export default function MapPage() {
 
   const handlePinClick = useCallback((pin: Pin) => {
     setSelectedId(pin.id)
-  }, [])
+    router.push(`/place/${pin.id}`)
+  }, [router])
 
   const handleSidebarSelect = useCallback((pin: Pin) => {
     setSelectedId(pin.id)
