@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { detectPlaceType } from '@/lib/place-type'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -32,24 +33,15 @@ const PROPERTY_PLACE_DATA_SCHEMA = `{
   "nearby_amenities": ["<amenity 1>", "<amenity 2>", "<amenity 3>"]
 }`
 
-function isPropertyAddress(name: string): boolean {
-  const patterns = [
-    /\d+/,
-    /\b(street|st|avenue|ave|road|rd|drive|dr|court|ct|lane|ln|way|place|pl|crescent|cres|boulevard|blvd|terrace|tce|close|cl|grove|gr)\b/i,
-    /[号室栋]/,
-  ]
-  return patterns.some(re => re.test(name))
-}
-
 export async function POST(request: Request) {
   const { name, country } = await request.json()
   if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 })
 
-  const placeType = isPropertyAddress(name) ? 'property' : 'city'
+  const placeType = detectPlaceType(name)
   const schema = placeType === 'property' ? PROPERTY_PLACE_DATA_SCHEMA : CITY_PLACE_DATA_SCHEMA
 
   const message = await client.messages.create({
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-4-6',
     max_tokens: 1024,
     messages: [{
       role: 'user',
@@ -69,6 +61,7 @@ Return only valid JSON. No markdown, no code fences, no extra text.`,
   try {
     const raw = message.content[0].type === 'text' ? message.content[0].text : '{}'
     const parsed = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null) throw new Error('unexpected shape')
     return NextResponse.json({
       summary: parsed.summary ?? '',
       place_data: parsed.place_data ?? null,
