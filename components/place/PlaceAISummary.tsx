@@ -27,11 +27,23 @@ export default function PlaceAISummary({
       if (!res.ok) throw new Error('生成失败')
       const { summary: text, place_data } = await res.json()
 
-      await fetch(`/api/pins/${pinId}`, {
+      // Always save ai_summary first — this must succeed
+      const saveRes = await fetch(`/api/pins/${pinId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ai_summary: text, place_data }),
+        body: JSON.stringify({ ai_summary: text }),
       })
+      if (!saveRes.ok) throw new Error('保存失败')
+
+      // Save place_data separately — silently skip if column doesn't exist yet
+      if (place_data) {
+        fetch(`/api/pins/${pinId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ place_data }),
+        }).catch(() => {})
+      }
+
       setSummary(text)
     } catch {
       setError('生成失败，请重试')
