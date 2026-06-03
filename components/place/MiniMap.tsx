@@ -41,8 +41,8 @@ export default function MiniMap({ pin }: { pin: Pin }) {
             .setLngLat([pin.lng, pin.lat])
             .addTo(map)
         })
-      } catch {
-        // map unavailable — container stays empty
+      } catch (err) {
+        console.error('[MiniMap] Mapbox init failed:', err)
       }
     }
 

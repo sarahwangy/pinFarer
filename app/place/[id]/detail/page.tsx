@@ -111,12 +111,12 @@ export default async function PlaceDetailPage({ params }: { params: { id: string
               <div>
                 <div className="text-[11px] text-[var(--muted)] mb-1">状态</div>
                 <span className="text-[13px] font-semibold text-[var(--ink)]">
-                  {STATUS_LABELS[pin.status]}
+                  {STATUS_LABELS[pin.status] ?? pin.status}
                 </span>
               </div>
               <div>
                 <div className="text-[11px] text-[var(--muted)] mb-1">发现来源</div>
-                <span className="text-[13px] text-[var(--ink)]">{SOURCE_LABELS[pin.source]}</span>
+                <span className="text-[13px] text-[var(--ink)]">{SOURCE_LABELS[pin.source] ?? pin.source}</span>
               </div>
               {pin.country && (
                 <div>
@@ -127,7 +127,7 @@ export default async function PlaceDetailPage({ params }: { params: { id: string
               <div>
                 <div className="text-[11px] text-[var(--muted)] mb-1">坐标</div>
                 <span className="font-mono text-[11px] text-[var(--muted)]">
-                  {pin.lat.toFixed(4)}, {pin.lng.toFixed(4)}
+                  {Number(pin.lat).toFixed(4)}, {Number(pin.lng).toFixed(4)}
                 </span>
               </div>
             </div>
