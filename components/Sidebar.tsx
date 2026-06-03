@@ -35,7 +35,7 @@ export default function Sidebar({
   const [query, setQuery] = useState('')
   const [newTag, setNewTag] = useState('')
 
-  const allTags = Array.from(new Set(pins.flatMap(p => p.tags ?? []))).sort()
+  const allTags = pins.flatMap(p => p.tags ?? []).filter((t, i, arr) => arr.indexOf(t) === i).sort()
 
   const visible = pins.filter(p => {
     const matchesStatus = filterStatus === 'all' || p.status === filterStatus
@@ -54,7 +54,8 @@ export default function Sidebar({
 
   const addTagToPin = () => {
     if (!selectedPin || !newTag.trim()) return
-    const updated = [...new Set([...(selectedPin.tags ?? []), newTag.trim()])]
+    const merged = [...(selectedPin.tags ?? []), newTag.trim()]
+    const updated = merged.filter((t, i) => merged.indexOf(t) === i)
     onUpdatePinTags(selectedPin.id, updated)
     setNewTag('')
   }
