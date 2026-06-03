@@ -60,29 +60,39 @@ export default function Map({ pins, onPinClick }: MapProps) {
       markersRef.current = []
 
       pins.forEach(pin => {
-        const el = document.createElement('div')
-        el.style.cssText = `
+        // Outer wrapper: large transparent hit area (32x32) — easy to click
+        const wrapper = document.createElement('div')
+        wrapper.style.cssText = `
+          width:32px;height:32px;
+          display:flex;align-items:center;justify-content:center;
+          cursor:pointer;
+        `
+        // Inner dot: visual only
+        const dot = document.createElement('div')
+        dot.style.cssText = `
           width:12px;height:12px;border-radius:50%;
           background:${PIN_COLORS[pin.status]};
-          border:2px solid rgba(255,255,255,0.8);
-          box-shadow:0 2px 6px rgba(0,0,0,0.2);
-          cursor:pointer;transition:transform .15s;
+          border:2px solid rgba(255,255,255,0.85);
+          box-shadow:0 2px 8px rgba(0,0,0,0.25);
+          transition:transform .15s;
+          pointer-events:none;
         `
-        el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.6)' })
-        el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)' })
+        wrapper.appendChild(dot)
+        wrapper.addEventListener('mouseenter', () => { dot.style.transform = 'scale(1.6)' })
+        wrapper.addEventListener('mouseleave', () => { dot.style.transform = 'scale(1)' })
 
-        const popup = new mapboxgl.Popup({ offset: 12, closeButton: false })
+        const popup = new mapboxgl.Popup({ offset: 14, closeButton: false })
           .setHTML(`<div style="font-family:sans-serif;padding:4px 2px">
             <div style="font-weight:600;font-size:13px">${pin.name}</div>
             <div style="font-size:11px;color:#888;margin-top:2px">${pin.country ?? ''}</div>
           </div>`)
 
-        const marker = new mapboxgl.Marker(el)
+        const marker = new mapboxgl.Marker({ element: wrapper, anchor: 'center' })
           .setLngLat([pin.lng, pin.lat])
           .setPopup(popup)
           .addTo(mapRef.current!)
 
-        el.addEventListener('click', () => onPinClick?.(pin))
+        wrapper.addEventListener('click', () => onPinClick?.(pin))
         markersRef.current.push(marker)
       })
     }

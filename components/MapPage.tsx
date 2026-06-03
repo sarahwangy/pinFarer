@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import type { Pin, PinStatus } from '@/types/pin'
@@ -24,11 +24,11 @@ export default function MapPage() {
       .catch(console.error)
   }, [])
 
-  const visiblePins = pins.filter(p => {
+  const visiblePins = useMemo(() => pins.filter(p => {
     const matchesStatus = filter === 'all' || p.status === filter
     const matchesTag = filterTag === null || (p.tags ?? []).includes(filterTag)
     return matchesStatus && matchesTag
-  })
+  }), [pins, filter, filterTag])
 
   const handlePinClick = useCallback((pin: Pin) => {
     setSelectedId(pin.id)
