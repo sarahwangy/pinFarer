@@ -6,6 +6,7 @@ import PlaceStatus from '@/components/place/PlaceStatus'
 import PlaceNotes from '@/components/place/PlaceNotes'
 import PlaceAISummary from '@/components/place/PlaceAISummary'
 import PlaceNearby from '@/components/place/PlaceNearby'
+import PlaceDetailSections from '@/components/place/PlaceDetailSections'
 
 const PlaceHero = dynamic(() => import('@/components/place/PlaceHero'), { ssr: false })
 
@@ -71,6 +72,7 @@ export default async function PlacePage({ params }: { params: { id: string } }) 
           country={pin.country}
           initialSummary={pin.ai_summary}
         />
+        {pin.place_data && <PlaceDetailSections data={pin.place_data} />}
         <PlaceNearby pins={nearby} />
       </div>
     </div>

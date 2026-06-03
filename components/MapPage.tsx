@@ -15,6 +15,7 @@ export default function MapPage() {
   const [pins, setPins] = useState<Pin[]>([])
   const [filter, setFilter] = useState<FilterValue>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [flyToPin, setFlyToPin] = useState<Pin | null>(null)
   const [filterTag, setFilterTag] = useState<string | null>(null)
 
   useEffect(() => {
@@ -37,6 +38,7 @@ export default function MapPage() {
 
   const handleSidebarSelect = useCallback((pin: Pin) => {
     setSelectedId(pin.id)
+    setFlyToPin(pin)
   }, [])
 
   const handleUpdatePinTags = useCallback(async (pinId: string, tags: string[]) => {
@@ -96,7 +98,7 @@ export default function MapPage() {
 
       {/* Map area */}
       <div className="flex-1 relative mt-[54px]">
-        <Map pins={visiblePins} onPinClick={handlePinClick} />
+        <Map pins={visiblePins} onPinClick={handlePinClick} flyToPin={flyToPin} />
         <div className="absolute top-3 left-3 z-10">
           <FilterBar active={filter} onChange={setFilter} />
         </div>

@@ -11,9 +11,10 @@ const PIN_COLORS: Record<string, string> = {
 interface MapProps {
   pins: Pin[]
   onPinClick?: (pin: Pin) => void
+  flyToPin?: Pin | null
 }
 
-export default function Map({ pins, onPinClick }: MapProps) {
+export default function Map({ pins, onPinClick, flyToPin }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const markersRef = useRef<mapboxgl.Marker[]>([])
@@ -99,6 +100,17 @@ export default function Map({ pins, onPinClick }: MapProps) {
 
     addMarkers()
   }, [pins, onPinClick])
+
+  // Fly to pin when selected from sidebar
+  useEffect(() => {
+    if (!flyToPin || !mapRef.current) return
+    mapRef.current.flyTo({
+      center: [flyToPin.lng, flyToPin.lat],
+      zoom: 6,
+      duration: 1800,
+      essential: true,
+    })
+  }, [flyToPin])
 
   return <div ref={containerRef} className="w-full h-full" />
 }
