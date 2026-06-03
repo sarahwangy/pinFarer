@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
     "@supabase/supabase-js": "^2.106.2",
     "@types/mapbox-gl": "^3.4.1",
     "mapbox-gl": "^3.24.0",
@@ -35,7 +36,14 @@
   },
   "jest": {
     "testEnvironment": "jsdom",
-    "transform": { "^.+\\.tsx?$": ["ts-jest", {}] },
-    "moduleNameMapper": { "^@/(.*)$": "<rootDir>/$1" }
+    "transform": {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {}
+      ]
+    },
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    }
   }
 }
