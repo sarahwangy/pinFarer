@@ -27,28 +27,35 @@ export default function PlaceHero({ pin }: PlaceHeroProps) {
   const [mapLoaded, setMapLoaded] = useState(false)
   const [pixabayUrl, setPixabayUrl] = useState<string | null>(null)
 
-  // Fetch Pixabay image in parallel with map init
+  // Fetch Pixabay image with cancellation on pin change
   useEffect(() => {
+    const controller = new AbortController()
     const query = pin.country ? `${pin.name} ${pin.country}` : pin.name
-    fetch(`/api/pixabay?q=${encodeURIComponent(query)}`)
+    fetch(`/api/pixabay?q=${encodeURIComponent(query)}`, { signal: controller.signal })
       .then(r => r.json())
       .then(data => { if (data.url) setPixabayUrl(data.url) })
       .catch(() => {})
+    return () => controller.abort()
   }, [pin.name, pin.country])
 
   // Mapbox map init
   useEffect(() => {
     if (!mapRef.current) return
     let map: any = null
+    let mounted = true
 
     const init = async () => {
       try {
         const mapboxgl = (await import('mapbox-gl')).default
         await import('mapbox-gl/dist/mapbox-gl.css')
+
+        // Bail out if component unmounted during async imports
+        if (!mounted || !mapRef.current) return
+
         mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!
 
         map = new mapboxgl.Map({
-          container: mapRef.current!,
+          container: mapRef.current,
           style: 'mapbox://styles/mapbox/outdoors-v12',
           center: [pin.lng, pin.lat],
           zoom: 10,
@@ -56,7 +63,11 @@ export default function PlaceHero({ pin }: PlaceHeroProps) {
           projection: 'globe' as any,
         })
 
+        let loaded = false
+
         map.on('load', () => {
+          loaded = true
+          if (!mounted) return
           setMapLoaded(true)
           const el = document.createElement('div')
           el.style.cssText = `
@@ -70,17 +81,21 @@ export default function PlaceHero({ pin }: PlaceHeroProps) {
             .addTo(map)
         })
 
-        map.on('error', () => setMapLoaded(false))
+        // Only set failed state if map never successfully loaded
+        map.on('error', () => {
+          if (!loaded && mounted) setMapLoaded(false)
+        })
       } catch {
         // map init failed — Pixabay fallback will show
       }
     }
 
     init()
-    return () => { map?.remove() }
+    return () => {
+      mounted = false
+      map?.remove()
+    }
   }, [pin.lng, pin.lat, pin.status])
-
-  const showPixabay = !mapLoaded && pixabayUrl
 
   return (
     <div className="relative h-[280px] w-full overflow-hidden">
@@ -91,11 +106,15 @@ export default function PlaceHero({ pin }: PlaceHeroProps) {
         style={{ opacity: mapLoaded ? 1 : 0, transition: 'opacity 0.4s' }}
       />
 
-      {/* Pixabay fallback image */}
-      {showPixabay && (
+      {/* Pixabay fallback — fades out smoothly when map loads */}
+      {pixabayUrl && (
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${pixabayUrl})` }}
+          style={{
+            backgroundImage: `url(${pixabayUrl})`,
+            opacity: mapLoaded ? 0 : 1,
+            transition: 'opacity 0.4s',
+          }}
         />
       )}
 
