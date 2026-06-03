@@ -15,6 +15,7 @@ export default function MapPage() {
   const [pins, setPins] = useState<Pin[]>([])
   const [filter, setFilter] = useState<FilterValue>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [filterTag, setFilterTag] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/pins')
@@ -23,7 +24,11 @@ export default function MapPage() {
       .catch(console.error)
   }, [])
 
-  const visiblePins = filter === 'all' ? pins : pins.filter(p => p.status === filter)
+  const visiblePins = pins.filter(p => {
+    const matchesStatus = filter === 'all' || p.status === filter
+    const matchesTag = filterTag === null || (p.tags ?? []).includes(filterTag)
+    return matchesStatus && matchesTag
+  })
 
   const handlePinClick = useCallback((pin: Pin) => {
     setSelectedId(pin.id)
@@ -31,6 +36,18 @@ export default function MapPage() {
 
   const handleSidebarSelect = useCallback((pin: Pin) => {
     setSelectedId(pin.id)
+  }, [])
+
+  const handleUpdatePinTags = useCallback(async (pinId: string, tags: string[]) => {
+    const res = await fetch(`/api/pins/${pinId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags }),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      setPins(prev => prev.map(p => p.id === pinId ? updated : p))
+    }
   }, [])
 
   return (
@@ -89,8 +106,11 @@ export default function MapPage() {
         <Sidebar
           pins={pins}
           filterStatus={filter}
+          filterTag={filterTag}
           selectedId={selectedId}
           onSelect={handleSidebarSelect}
+          onTagFilter={setFilterTag}
+          onUpdatePinTags={handleUpdatePinTags}
         />
       </div>
     </div>
