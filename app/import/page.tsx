@@ -91,6 +91,17 @@ export default function ImportPage() {
     setRows(prev => prev.map((r, i) => i === index ? { ...r, status: newStatus } : r))
   }, [])
 
+  const bulkSetStatus = useCallback((newStatus: PinStatus) => {
+    setRows(prev => prev.map(r => ({ ...r, status: newStatus })))
+  }, [])
+
+  const bulkAddTag = useCallback((tag: string) => {
+    setRows(prev => prev.map(r => ({
+      ...r,
+      tags: r.tags?.includes(tag) ? r.tags : [...(r.tags ?? []), tag],
+    })))
+  }, [])
+
   const handleImport = async () => {
     setMode('importing')
     setProgress(0)
@@ -101,6 +112,7 @@ export default function ImportPage() {
       status: r.status,
       source,
       country: r.country ?? null,
+      tags: r.tags ?? [],
     }))
 
     const BATCH = 100
@@ -225,7 +237,12 @@ export default function ImportPage() {
           </div>
         )}
 
-        <ImportTable rows={rows} onChange={updateRowStatus} />
+        <ImportTable
+          rows={rows}
+          onChangeStatus={updateRowStatus}
+          onBulkStatus={bulkSetStatus}
+          onBulkTag={bulkAddTag}
+        />
 
         {rows.length > 0 && !isWorking && (
           <div className="flex justify-end gap-3">
