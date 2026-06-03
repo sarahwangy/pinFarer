@@ -13,12 +13,14 @@ export async function GET(request: Request) {
     q,
     image_type: 'photo',
     orientation: 'horizontal',
-    per_page: '3',
+    per_page: '1',
     safesearch: 'true',
   })
 
   try {
-    const res = await fetch(`https://pixabay.com/api/?${params}`)
+    const res = await fetch(`https://pixabay.com/api/?${params}`, {
+      signal: AbortSignal.timeout(5000),
+    })
     if (!res.ok) return NextResponse.json({ url: null })
     const data = await res.json()
     const url = data.hits?.[0]?.webformatURL ?? null
