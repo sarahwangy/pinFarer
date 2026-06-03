@@ -112,3 +112,22 @@
   - Mapbox `Marker` 默认 anchor 是 `bottom-center`（像图钉一样尖端对准坐标），自定义圆点 marker 要加 `anchor: 'center'`
 
 - **一句话总结：** 性能 bug 和 UI bug 往往同源——理解 React 的渲染机制（引用变了就重渲染）能一次解决两个问题。
+
+---
+
+### E3 - 地点详情页（Hero 地图 + 信息卡片 + AI 介绍）
+
+- **学到的核心概念：**
+  - Server Component vs Client Component 的拆分原则：能在服务器取的数据就在服务器取（`getData()`），需要交互的部分拆成 Client Component
+  - `dynamic(() => import(...), { ssr: false })`：Mapbox 这类依赖浏览器 DOM 的库必须用动态导入，在服务端渲染会报错
+  - Anthropic SDK：`client.messages.create()` 是行业标准的 LLM API 调用方式，`max_tokens` 控制生成长度
+
+- **用到的关键 API/函数：**
+  - `supabase.from('pins').select('*').eq('country', pin.country).neq('id', id).limit(3)`：链式查询，`.neq` = not equal，排除自身
+  - CSS `@keyframes`：纯 CSS 动画，不需要 JS 控制加载状态小点
+
+- **容易踩的坑：**
+  - Mapbox 地图在 Server Component 里会报错，必须用 `dynamic` + `ssr: false` 包一层
+  - `ANTHROPIC_API_KEY` 没有 `NEXT_PUBLIC_` 前缀 = 只有服务器能读，浏览器无法访问，这是正确做法（保护 API key）
+
+- **一句话总结：** 详情页 = 服务端取数据 + 多个独立 Client Component 各管一块交互，职责分离让每个组件只需要理解自己那一块。
