@@ -72,7 +72,21 @@ export default function PlaceAISummary({
           <span className="text-[13px] text-white/50">正在生成旅行介绍…</span>
         </div>
       ) : summary ? (
-        <p className="text-[13px] text-white/80 leading-relaxed whitespace-pre-wrap">{summary}</p>
+        <div>
+          <p className={`text-[13px] text-white/80 leading-relaxed whitespace-pre-wrap
+            ${summary.length > 200 ? 'line-clamp-4' : ''}`}>
+            {summary}
+          </p>
+          {summary.length > 200 && (
+            <a
+              href={`/place/${pinId}/detail`}
+              className="inline-flex items-center gap-1 mt-3 text-[12px] font-semibold
+                text-[var(--coral)] hover:text-[#d4623e] transition-colors"
+            >
+              展开查看完整介绍 ↗
+            </a>
+          )}
+        </div>
       ) : (
         <div className="text-center py-4">
           <p className="text-[13px] text-white/40 mb-3">
