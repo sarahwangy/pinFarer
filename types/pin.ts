@@ -14,6 +14,7 @@ export interface Pin {
   source_url: string | null
   notes: string | null
   ai_summary: string | null
+  tags: string[]
   created_at: string
 }
 
@@ -24,4 +25,5 @@ export interface ParsedPin {
   status: PinStatus
   source: PinSource
   country?: string
+  tags?: string[]
 }
