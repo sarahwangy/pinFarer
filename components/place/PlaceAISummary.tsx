@@ -25,12 +25,12 @@ export default function PlaceAISummary({
         body: JSON.stringify({ name: pinName, country }),
       })
       if (!res.ok) throw new Error('生成失败')
-      const { summary: text } = await res.json()
+      const { summary: text, place_data } = await res.json()
 
       await fetch(`/api/pins/${pinId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ai_summary: text }),
+        body: JSON.stringify({ ai_summary: text, place_data }),
       })
       setSummary(text)
     } catch {
