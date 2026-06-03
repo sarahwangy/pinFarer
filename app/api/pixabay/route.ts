@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
   const params = new URLSearchParams({
     key,
-    q: encodeURIComponent(q),
+    q,
     image_type: 'photo',
     orientation: 'horizontal',
     per_page: '3',
