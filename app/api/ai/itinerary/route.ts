@@ -11,11 +11,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'destination required' }, { status: 400 })
   }
 
-  const pinList = (pins as { name: string; country: string | null }[])
+  const pinList = ((pins ?? []) as { name: string; country: string | null }[])
     .map(p => `- ${p.name}${p.country ? ` (${p.country})` : ''}`)
     .join('\n')
 
-  const tagList = (tags as string[]).join('、') || '无特定偏好'
+  const tagList = ((tags ?? []) as string[]).join('、') || '无特定偏好'
 
   const prompt = `You are a professional travel planner. Create a detailed ${days}-day itinerary for: ${destination}.
 
