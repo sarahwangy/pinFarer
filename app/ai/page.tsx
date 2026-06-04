@@ -124,12 +124,25 @@ export default function AIPage() {
         <AppNav activePage="ai" />
         <div className="pt-[54px]">
           {/* Hero image */}
-          <div className="relative h-52 overflow-hidden bg-gradient-to-br from-[#1a3a5c] to-[#2d6a4f]">
+          <div className="relative h-64 overflow-hidden bg-gradient-to-br from-[#1a3a5c] to-[#2d6a4f]">
             {heroUrl && (
               <img src={heroUrl} alt={destination}
                 className="w-full h-full object-cover opacity-70" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+            {/* Quote — top right */}
+            {itinerary.quote && (
+              <div className="absolute top-5 right-6 max-w-xs text-right">
+                <p className="font-serif italic text-[15px] text-white/90 leading-snug">
+                  &ldquo;{itinerary.quote}&rdquo;
+                </p>
+                {itinerary.quoteAuthor && (
+                  <p className="text-[11px] text-white/60 mt-1 font-medium">— {itinerary.quoteAuthor}</p>
+                )}
+              </div>
+            )}
+
             <div className="absolute bottom-0 left-0 right-0 px-6 pb-5 flex items-end justify-between">
               <div>
                 <h1 className="font-serif text-4xl font-bold text-white leading-tight">{itinerary.title}</h1>
@@ -235,7 +248,7 @@ export default function AIPage() {
                     <button key={pin.id} type="button" onClick={() => togglePin(pin.id)}
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium
                         border transition-all ${sel
-                          ? 'border-[var(--ink)] bg-[var(--ink)] text-white'
+                          ? 'border-[var(--forest)] bg-[var(--forest)] text-white'
                           : 'border-black/[0.12] bg-white text-[var(--ink)] hover:border-black/30'
                         }`}
                     >
@@ -270,7 +283,7 @@ export default function AIPage() {
                   <button key={d} type="button" onClick={() => setDays(d)}
                     className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-all
                       ${days === d
-                        ? 'bg-[var(--ink)] text-white border-[var(--ink)]'
+                        ? 'bg-[var(--forest)] text-white border-[var(--forest)]'
                         : 'bg-white text-[var(--muted)] border-black/[0.1] hover:border-black/25'
                       }`}>
                     {d}天
@@ -295,7 +308,7 @@ export default function AIPage() {
                   <button key={s} type="button" onClick={() => setStyle(s)}
                     className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-all
                       ${style === s
-                        ? 'bg-[var(--ink)] text-white border-[var(--ink)]'
+                        ? 'bg-[var(--forest)] text-white border-[var(--forest)]'
                         : 'bg-white text-[var(--muted)] border-black/[0.1] hover:border-black/25'
                       }`}>
                     {s}
@@ -346,7 +359,7 @@ export default function AIPage() {
                     font-medium text-[var(--ink)] bg-[var(--sand)] outline-none
                     focus:border-[var(--coral)] transition-colors" />
                 <button type="button" onClick={addCustomTag}
-                  className="px-3 py-1.5 rounded-xl bg-[var(--ink)] text-white text-[12px] font-semibold
+                  className="px-3 py-1.5 rounded-xl bg-[var(--forest)] text-white text-[12px] font-semibold
                     hover:bg-[var(--coral)] transition-colors">
                   + 添加
                 </button>
@@ -357,7 +370,7 @@ export default function AIPage() {
             <button type="button" onClick={handleGenerate}
               disabled={loading || !destination.trim()}
               className="w-full py-3 rounded-xl font-bold text-[14px] text-white transition-all
-                bg-[var(--ink)] hover:bg-[var(--coral)] disabled:opacity-40 disabled:cursor-not-allowed
+                bg-[var(--forest)] hover:bg-[var(--coral)] disabled:opacity-40 disabled:cursor-not-allowed
                 flex items-center justify-center gap-2">
               {loading ? (
                 <>

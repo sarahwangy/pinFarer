@@ -18,4 +18,6 @@ export interface Itinerary {
   pinCount: number
   style: string
   totalDays: number
+  quote?: string
+  quoteAuthor?: string
 }
