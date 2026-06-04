@@ -75,7 +75,10 @@ export default function MapPage() {
                   ? 'bg-[var(--coral)] text-white'
                   : 'text-[var(--ink)]/45 hover:text-[var(--ink)]/80 hover:bg-black/5'
                 }`}
-              onClick={() => { if (i === 3) router.push('/import') }}
+              onClick={() => {
+                if (i === 1) router.push('/dashboard')
+                if (i === 3) router.push('/import')
+              }}
             >
               {label}
             </button>
