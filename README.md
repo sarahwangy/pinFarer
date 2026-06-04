@@ -1,36 +1,169 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pinfarer 🌍
+
+**Personal travel map + AI trip planner** — pin places you've visited, want to visit, or dream about, then let Claude build your itinerary.
+
+> **Live demo:** [pinfarer.vercel.app](https://pinfarer.vercel.app)
+
+---
+
+## Features
+
+### 🗺 Interactive Globe Map
+- Mapbox GL globe projection with real ocean colors
+- Click any pin to fly to its location with smooth animation
+- Filter by status: Visited / Watchlist / Dream
+- Filter by tags
+- Sidebar pin list
+
+### 📍 Place Details
+- Hero image (Mapbox satellite + Pixabay photo fallback)
+- AI-generated introduction via Claude Sonnet 4.6
+- **City data:** population, language, currency, climate, food culture, visa info, safety level, notable animals
+- **Property data:** council, schools, transport score, CBD distance, median price range
+- Personal notes with auto-save
+- Status selector (Visited / Watchlist / Dream)
+- Nearby places in the same country
+
+### 📊 Dashboard
+- KPI cards: total pins, visited, watchlist, dream counts
+- SVG donut chart — status distribution
+- Horizontal bar chart — discovery source breakdown (YouTube, WeChat, 小红书, etc.)
+- Country/region ranked list with progress bars
+- Tags cloud
+
+### ✦ AI Trip Planner
+- Select saved pins to include in the itinerary
+- Configure: destination, trip length (3–14 days), travel style, preference tags
+- Claude generates a day-by-day itinerary with timed activities
+- Live Mapbox map shows selected pins + dashed route line
+
+### 📂 KML Import
+- Drag & drop Google Takeout KML files
+- Preview parsed places before importing
+- Set status per place before confirming
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 14 (App Router) |
+| Database | Supabase (PostgreSQL + JSONB) |
+| Map | Mapbox GL JS (globe projection) |
+| AI | Anthropic Claude Sonnet 4.6 |
+| Images | Pixabay API (server-side proxy) |
+| Styling | Tailwind CSS |
+| Deploy | Vercel |
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- A [Supabase](https://supabase.com) project
+- A [Mapbox](https://mapbox.com) token (free tier works)
+- An [Anthropic](https://console.anthropic.com) API key
+- A [Pixabay](https://pixabay.com/api/docs/) API key (free)
+
+### 1. Clone & install
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/your-username/pinfarer.git
+cd pinfarer
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create `pinfarer/.env.local`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ1...
+ANTHROPIC_API_KEY=sk-ant-...
+PIXABAY_API_KEY=your-pixabay-key
+```
 
-## Learn More
+### 3. Supabase schema
 
-To learn more about Next.js, take a look at the following resources:
+Run this SQL in the Supabase SQL Editor:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```sql
+create table if not exists pins (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid,
+  name        text not null,
+  country     text,
+  region      text,
+  lat         double precision not null,
+  lng         double precision not null,
+  status      text not null default 'watchlist',
+  source      text not null default 'unknown',
+  source_url  text,
+  notes       text,
+  ai_summary  text,
+  place_data  jsonb,
+  tags        text[] default '{}',
+  created_at  timestamptz default now()
+);
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. Run locally
 
-## Deploy on Vercel
+```bash
+cd pinfarer
+npm run dev
+# → http://localhost:3005
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Structure
+
+```
+pinfarer/
+├── app/
+│   ├── page.tsx                  # Map home page
+│   ├── dashboard/page.tsx        # Stats dashboard
+│   ├── ai/page.tsx               # AI trip planner
+│   ├── import/page.tsx           # KML import
+│   ├── place/[id]/page.tsx       # Place detail
+│   ├── place/[id]/detail/        # Expanded place detail
+│   └── api/
+│       ├── pins/                 # CRUD for pins
+│       ├── ai/summary/           # Claude place introduction
+│       ├── ai/itinerary/         # Claude trip planner
+│       ├── geocode/              # Mapbox geocoding proxy
+│       └── pixabay/              # Pixabay image proxy
+├── components/
+│   ├── Map.tsx                   # Mapbox globe
+│   ├── MapPage.tsx               # Home page shell + nav
+│   ├── Sidebar.tsx               # Pin list sidebar
+│   ├── FilterBar.tsx             # Status / tag filters
+│   ├── place/                    # Place detail components
+│   ├── dashboard/                # Dashboard chart components
+│   └── ai/                      # AI planner components
+├── lib/
+│   ├── kml-parser.ts             # Google Takeout KML parser
+│   ├── place-type.ts             # City vs property detection
+│   └── supabase.ts               # Supabase client
+└── types/
+    ├── pin.ts                    # Pin, CityData, PropertyData types
+    └── itinerary.ts              # Itinerary, DayPlan, Activity types
+```
+
+---
+
+## Deploy to Vercel
+
+1. Push to GitHub
+2. Import the repo at [vercel.com/new](https://vercel.com/new)
+3. Set **Root Directory** to `pinfarer`
+4. Add all five environment variables
+5. Click Deploy
+
+Every `git push` to `main` triggers automatic redeployment.
