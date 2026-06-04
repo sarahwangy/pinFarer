@@ -12,9 +12,44 @@ const STATUS_COLORS: Record<string, string> = {
   dream:     '#8B7FD4',
 }
 
+// Haversine distance in km between two coords
+function distanceKm(a: [number, number], b: [number, number]) {
+  const R = 6371
+  const dLat = (b[1] - a[1]) * Math.PI / 180
+  const dLng = (b[0] - a[0]) * Math.PI / 180
+  const x = Math.sin(dLat / 2) ** 2 +
+    Math.cos(a[1] * Math.PI / 180) * Math.cos(b[1] * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
+}
+
+// Try Mapbox Directions API — returns route coordinates or null if fails / too far
+async function fetchRoute(coords: [number, number][], token: string): Promise<[number, number][] | null> {
+  if (coords.length < 2) return null
+
+  // Skip Directions API if any two adjacent pins are more than 500km apart (international)
+  for (let i = 0; i < coords.length - 1; i++) {
+    if (distanceKm(coords[i], coords[i + 1]) > 500) return null
+  }
+
+  const coordStr = coords.map(c => `${c[0]},${c[1]}`).join(';')
+  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}?geometries=geojson&overview=full&access_token=${token}`
+
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const data = await res.json()
+    const routeCoords = data.routes?.[0]?.geometry?.coordinates
+    if (!Array.isArray(routeCoords) || routeCoords.length === 0) return null
+    return routeCoords as [number, number][]
+  } catch {
+    return null
+  }
+}
+
 export default function ItineraryMap({ selectedPins }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
+  const tokenRef = useRef<string>('')
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -24,8 +59,9 @@ export default function ItineraryMap({ selectedPins }: Props) {
     import('mapbox-gl').then(mgl => {
       if (!mounted || !containerRef.current) return
       const mapboxgl = mgl.default ?? mgl
-      ;(mapboxgl as unknown as { accessToken: string }).accessToken =
-        process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ''
+      const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ''
+      ;(mapboxgl as unknown as { accessToken: string }).accessToken = token
+      tokenRef.current = token
 
       const map = new mapboxgl.Map({
         container: containerRef.current,
@@ -48,7 +84,9 @@ export default function ItineraryMap({ selectedPins }: Props) {
     const map = mapRef.current
     if (!map || selectedPins.length === 0) return
 
-    const applyLayers = () => {
+    const coords = selectedPins.map(p => [p.lng, p.lat] as [number, number])
+
+    async function applyLayers() {
       // Remove existing layers/sources
       ;['route-line', 'pin-points'].forEach(id => {
         if (map.getLayer(id)) map.removeLayer(id)
@@ -57,14 +95,16 @@ export default function ItineraryMap({ selectedPins }: Props) {
         if (map.getSource(id)) map.removeSource(id)
       })
 
-      const coords = selectedPins.map(p => [p.lng, p.lat] as [number, number])
+      // Try real road route; fall back to straight line
+      const routeCoords = await fetchRoute(coords, tokenRef.current)
+      const lineCoords = routeCoords ?? coords
 
       // Route line
       map.addSource('route', {
         type: 'geojson',
         data: {
           type: 'Feature',
-          geometry: { type: 'LineString', coordinates: coords },
+          geometry: { type: 'LineString', coordinates: lineCoords },
           properties: {},
         },
       })
@@ -75,9 +115,9 @@ export default function ItineraryMap({ selectedPins }: Props) {
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
           'line-color': '#FF6B47',
-          'line-width': 2,
-          'line-dasharray': [2, 2],
-          'line-opacity': 0.7,
+          'line-width': routeCoords ? 3 : 2,
+          'line-dasharray': routeCoords ? [1, 0] : [2, 2],
+          'line-opacity': 0.8,
         },
       })
 
@@ -111,15 +151,15 @@ export default function ItineraryMap({ selectedPins }: Props) {
         },
       })
 
-      // Fit bounds
+      // Fit bounds to pin positions (not route, which could be long)
       if (coords.length === 1) {
-        map.flyTo({ center: coords[0], zoom: 10 })
+        map.flyTo({ center: coords[0], zoom: 12 })
       } else {
         const lngs = coords.map(c => c[0])
         const lats = coords.map(c => c[1])
         map.fitBounds(
           [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
-          { padding: 60, duration: 800 }
+          { padding: 80, duration: 800 }
         )
       }
     }
@@ -132,10 +172,7 @@ export default function ItineraryMap({ selectedPins }: Props) {
   }, [selectedPins])
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full rounded-2xl overflow-hidden"
-      style={{ minHeight: '300px' }}
-    />
+    <div ref={containerRef} className="w-full h-full rounded-2xl overflow-hidden"
+      style={{ minHeight: '300px' }} />
   )
 }
