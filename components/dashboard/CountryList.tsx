@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 interface Props {
   topCountries: { country: string; count: number }[]
 }
@@ -12,13 +14,19 @@ export default function CountryList({ topCountries }: Props) {
   return (
     <div className="grid grid-cols-2 gap-x-8 gap-y-3">
       {topCountries.map(({ country, count }, i) => (
-        <div key={country} className="flex items-center gap-3">
+        <Link
+          key={country}
+          href={`/?country=${encodeURIComponent(country)}`}
+          className="flex items-center gap-3 group"
+        >
           <span className="text-[12px] font-bold text-[var(--muted)] w-5 text-right flex-shrink-0">
             {i + 1}
           </span>
           <div className="flex-1 min-w-0">
             <div className="flex justify-between text-[13px] mb-1">
-              <span className="font-medium text-[var(--ink)] truncate">{country}</span>
+              <span className="font-medium text-[var(--ink)] truncate group-hover:text-[var(--coral)] transition-colors">
+                {country}
+              </span>
               <span className="text-[var(--muted)] ml-2 flex-shrink-0">{count}</span>
             </div>
             <div className="h-1.5 bg-black/[0.06] rounded-full overflow-hidden">
@@ -28,7 +36,7 @@ export default function CountryList({ topCountries }: Props) {
               />
             </div>
           </div>
-        </div>
+        </Link>
       ))}
     </div>
   )

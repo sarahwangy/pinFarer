@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { Pin, PinStatus } from '@/types/pin'
 import FilterBar from './FilterBar'
 import Sidebar from './Sidebar'
@@ -13,11 +13,21 @@ type FilterValue = PinStatus | 'all'
 
 export default function MapPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [pins, setPins] = useState<Pin[]>([])
   const [filter, setFilter] = useState<FilterValue>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [flyToPin, setFlyToPin] = useState<Pin | null>(null)
   const [filterTag, setFilterTag] = useState<string | null>(null)
+  const [filterCountry, setFilterCountry] = useState<string | null>(null)
+
+  // Apply URL params on first load: ?status=dream&country=Australia
+  useEffect(() => {
+    const status = searchParams.get('status') as FilterValue | null
+    const country = searchParams.get('country')
+    if (status && ['visited', 'watchlist', 'dream'].includes(status)) setFilter(status)
+    if (country) setFilterCountry(country)
+  }, [searchParams])
 
   useEffect(() => {
     fetch('/api/pins')
@@ -29,8 +39,9 @@ export default function MapPage() {
   const visiblePins = useMemo(() => pins.filter(p => {
     const matchesStatus = filter === 'all' || p.status === filter
     const matchesTag = filterTag === null || (p.tags ?? []).includes(filterTag)
-    return matchesStatus && matchesTag
-  }), [pins, filter, filterTag])
+    const matchesCountry = filterCountry === null || p.country === filterCountry
+    return matchesStatus && matchesTag && matchesCountry
+  }), [pins, filter, filterTag, filterCountry])
 
   const handlePinClick = useCallback((pin: Pin) => {
     setSelectedId(pin.id)
@@ -69,7 +80,7 @@ export default function MapPage() {
       {/* Sidebar */}
       <div className="mt-[54px] flex-shrink-0">
         <Sidebar
-          pins={pins}
+          pins={visiblePins}
           filterStatus={filter}
           filterTag={filterTag}
           selectedId={selectedId}
@@ -77,6 +88,15 @@ export default function MapPage() {
           onTagFilter={setFilterTag}
           onUpdatePinTags={handleUpdatePinTags}
         />
+        {filterCountry && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20
+            bg-[var(--ink)] text-white text-[12px] font-semibold px-3 py-1.5 rounded-full
+            flex items-center gap-2 shadow-lg">
+            📍 {filterCountry}
+            <button type="button" onClick={() => setFilterCountry(null)}
+              className="opacity-60 hover:opacity-100 transition-opacity ml-1">✕</button>
+          </div>
+        )}
       </div>
     </div>
   )

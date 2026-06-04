@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import AppNav from '@/components/AppNav'
 import StatusDonut from '@/components/dashboard/StatusDonut'
 import SourceBars from '@/components/dashboard/SourceBars'
@@ -80,13 +81,16 @@ export default async function DashboardPage() {
         {/* KPI cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: '全部地点', value: stats.total, color: 'var(--coral)', isTotal: true },
-            { label: '✓ 已到访', value: stats.byStatus.visited, color: 'var(--mint)', isTotal: false },
-            { label: '👁 想去', value: stats.byStatus.watchlist, color: 'var(--amber)', isTotal: false },
-            { label: '✨ 梦想', value: stats.byStatus.dream, color: 'var(--lavender)', isTotal: false },
-          ].map(({ label, value, color, isTotal }) => (
-            <div key={label} className="bg-white rounded-2xl border border-black/[0.07]
-              shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-5">
+            { label: '全部地点', value: stats.total, color: 'var(--coral)', isTotal: true,  href: '/' },
+            { label: '✓ 已到访', value: stats.byStatus.visited,   color: 'var(--mint)',     isTotal: false, href: '/?status=visited' },
+            { label: '👁 想去',  value: stats.byStatus.watchlist,  color: 'var(--amber)',    isTotal: false, href: '/?status=watchlist' },
+            { label: '✨ 梦想',  value: stats.byStatus.dream,      color: 'var(--lavender)', isTotal: false, href: '/?status=dream' },
+          ].map(({ label, value, color, isTotal, href }) => (
+            <Link key={label} href={href}
+              className="bg-white rounded-2xl border border-black/[0.07]
+                shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-5 block
+                hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:-translate-y-0.5
+                transition-all duration-200 cursor-pointer">
               <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-3">{label}</div>
               <div className="text-4xl font-serif font-bold" style={{ color }}>{value}</div>
               {!isTotal && stats.total > 0 && (
@@ -94,7 +98,12 @@ export default async function DashboardPage() {
                   {Math.round(value / stats.total * 100)}%
                 </div>
               )}
-            </div>
+              {!isTotal && (
+                <div className="text-[11px] text-[var(--muted)] mt-2 opacity-0 group-hover:opacity-100">
+                  查看地点 →
+                </div>
+              )}
+            </Link>
           ))}
         </div>
 

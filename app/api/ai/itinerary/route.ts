@@ -68,8 +68,13 @@ Rules:
   const end = raw.lastIndexOf('}')
   const jsonStr = start !== -1 && end > start ? raw.slice(start, end + 1) : raw
 
+  // Sanitize: Claude sometimes puts literal newlines inside JSON string values (invalid JSON).
+  // Replacing all literal \r and \n with a space is safe — JSON structural whitespace is ignored,
+  // and newlines inside string values become spaces which is acceptable.
+  const sanitized = jsonStr.replace(/\r?\n/g, ' ')
+
   try {
-    const parsed = JSON.parse(jsonStr) as Itinerary
+    const parsed = JSON.parse(sanitized) as Itinerary
     if (!parsed.days || !Array.isArray(parsed.days)) throw new Error('invalid shape')
     return NextResponse.json(parsed)
   } catch (err) {
