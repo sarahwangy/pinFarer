@@ -77,6 +77,7 @@ export default function MapPage() {
                 }`}
               onClick={() => {
                 if (i === 1) router.push('/dashboard')
+                if (i === 2) router.push('/ai')
                 if (i === 3) router.push('/import')
               }}
             >
