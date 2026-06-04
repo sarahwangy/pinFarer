@@ -63,8 +63,11 @@ Rules:
 
   const raw = message.content[0].type === 'text' ? message.content[0].text : '{}'
 
+  // Strip markdown code fences if Claude wrapped the JSON
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+
   try {
-    const parsed = JSON.parse(raw) as Itinerary
+    const parsed = JSON.parse(cleaned) as Itinerary
     if (!parsed.days || !Array.isArray(parsed.days)) throw new Error('invalid shape')
     return NextResponse.json(parsed)
   } catch {
