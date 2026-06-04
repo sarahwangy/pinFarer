@@ -88,7 +88,7 @@ export default function ItineraryMap({ selectedPins }: Props) {
 
     async function applyLayers() {
       // Remove existing layers/sources
-      ;['route-line', 'pin-points'].forEach(id => {
+      ;['route-casing', 'route-line', 'pin-points'].forEach(id => {
         if (map.getLayer(id)) map.removeLayer(id)
       })
       ;['route', 'pins'].forEach(id => {
@@ -108,16 +108,29 @@ export default function ItineraryMap({ selectedPins }: Props) {
           properties: {},
         },
       })
+      // White casing underneath the blue line — makes it pop on any map background
+      map.addLayer({
+        id: 'route-casing',
+        type: 'line',
+        source: 'route',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': routeCoords ? 9 : 7,
+          'line-opacity': 0.9,
+        },
+      })
+      // Royal blue route line on top
       map.addLayer({
         id: 'route-line',
         type: 'line',
         source: 'route',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': '#FF6B47',
-          'line-width': routeCoords ? 3 : 2,
-          'line-dasharray': routeCoords ? [1, 0] : [2, 2],
-          'line-opacity': 0.8,
+          'line-color': '#1D4ED8',
+          'line-width': routeCoords ? 5 : 4,
+          'line-dasharray': routeCoords ? [1, 0] : [3, 2],
+          'line-opacity': 1,
         },
       })
 
@@ -133,21 +146,17 @@ export default function ItineraryMap({ selectedPins }: Props) {
           })),
         },
       })
+      // Outer glow ring
       map.addLayer({
         id: 'pin-points',
         type: 'circle',
         source: 'pins',
         paint: {
-          'circle-radius': 7,
-          'circle-color': [
-            'match', ['get', 'status'],
-            'visited', STATUS_COLORS.visited,
-            'watchlist', STATUS_COLORS.watchlist,
-            'dream', STATUS_COLORS.dream,
-            '#FF6B47',
-          ],
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
+          'circle-radius': 11,
+          'circle-color': '#FBBF24',      // vivid amber/yellow — pops on any map
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#1D4ED8', // dark blue border matches route
+          'circle-opacity': 1,
         },
       })
 
