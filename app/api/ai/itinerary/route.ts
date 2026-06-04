@@ -4,11 +4,23 @@ import type { Itinerary } from '@/types/itinerary'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// In-memory cache: key = "destination|days|style", value = parsed Itinerary
+// Lives as long as the server process — cleared on restart or redeploy
+const cache = new Map<string, Itinerary>()
+
 export async function POST(request: Request) {
   const { destination, days, style, tags, pins } = await request.json()
 
   if (!destination) {
     return NextResponse.json({ error: 'destination required' }, { status: 400 })
+  }
+
+  // Return cached result for same destination+days+style (saves API cost during testing)
+  const cacheKey = `${destination.trim().toLowerCase()}|${days}|${style}`
+  const cached = cache.get(cacheKey)
+  if (cached) {
+    console.log('[itinerary] cache hit:', cacheKey)
+    return NextResponse.json(cached)
   }
 
   const pinList = ((pins ?? []) as { name: string; country: string | null }[])
@@ -56,7 +68,7 @@ Rules:
 - For trips > 5 days, you may group multiple days in one block (e.g. "Day 6-7")`
 
   const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 4096,
     messages: [{ role: 'user', content: prompt }],
   })
@@ -76,6 +88,7 @@ Rules:
   try {
     const parsed = JSON.parse(sanitized) as Itinerary
     if (!parsed.days || !Array.isArray(parsed.days)) throw new Error('invalid shape')
+    cache.set(cacheKey, parsed)   // store so next identical request is free
     return NextResponse.json(parsed)
   } catch (err) {
     console.error('[itinerary] parse error:', err, '\nraw:', raw.slice(0, 500))
