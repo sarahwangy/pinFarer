@@ -1,9 +1,10 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import AppNav from '@/components/AppNav'
+import ResultView from '@/components/ai/ResultView'
 import type { Pin } from '@/types/pin'
-import type { Itinerary, DayPlan, Activity } from '@/types/itinerary'
+import type { Itinerary } from '@/types/itinerary'
 
 const ItineraryMap = dynamic(() => import('@/components/ai/ItineraryMap'), { ssr: false })
 
@@ -120,103 +121,12 @@ export default function AIPage() {
   // ─── RESULT VIEW ────────────────────────────────────────────────────────────
   if (view === 'result' && itinerary) {
     return (
-      <div className="min-h-screen bg-[var(--sand)]">
-        <AppNav activePage="ai" />
-        <div className="pt-[54px]">
-          {/* Hero image */}
-          <div className="relative h-64 overflow-hidden bg-gradient-to-br from-[#1a3a5c] to-[#2d6a4f]">
-            {heroUrl && (
-              <img src={heroUrl} alt={destination}
-                className="w-full h-full object-cover opacity-70" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-
-            {/* Quote — top right */}
-            {itinerary.quote && (
-              <div className="absolute top-5 right-6 max-w-xs text-right">
-                <p className="font-serif italic text-[15px] text-white/90 leading-snug">
-                  &ldquo;{itinerary.quote}&rdquo;
-                </p>
-                {itinerary.quoteAuthor && (
-                  <p className="text-[11px] text-white/60 mt-1 font-medium">— {itinerary.quoteAuthor}</p>
-                )}
-              </div>
-            )}
-
-            <div className="absolute bottom-0 left-0 right-0 px-6 pb-5 flex items-end justify-between">
-              <div>
-                <h1 className="font-serif text-4xl font-bold text-white leading-tight">{itinerary.title}</h1>
-                <div className="flex flex-wrap gap-3 mt-2">
-                  {[
-                    `🗓 ${itinerary.totalDays} 天`,
-                    `🎯 ${itinerary.style}`,
-                    itinerary.pinCount > 0 ? `📍 ${itinerary.pinCount} 个收藏` : null,
-                    '✦ Claude Haiku',
-                  ].filter(Boolean).map(t => (
-                    <span key={t} className="text-[12px] text-white/80">{t}</span>
-                  ))}
-                </div>
-              </div>
-              <button type="button" onClick={() => setView('form')}
-                className="px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30
-                  text-white text-[13px] font-semibold hover:bg-white/30 transition-all flex-shrink-0">
-                ← 重新规划
-              </button>
-            </div>
-          </div>
-
-          {/* Two-col layout */}
-          <div className="flex h-[calc(100vh-54px-208px)]">
-            {/* Day cards */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 max-w-xl">
-              <div className="flex flex-col gap-4">
-                {itinerary.days.map((day: DayPlan) => (
-                  <div key={day.day} className="bg-white rounded-2xl border border-black/[0.07]
-                    shadow-[0_2px_12px_rgba(0,0,0,0.04)] overflow-hidden">
-                    <div className="flex items-center gap-3 px-5 py-3 border-b border-black/[0.06]">
-                      <span className="font-serif text-[13px] font-bold text-[var(--coral)]">{day.day}</span>
-                      <span className="font-semibold text-[14px] text-[var(--ink)]">{day.title}</span>
-                      <span className="ml-auto text-[11px] font-semibold px-2.5 py-1 rounded-full
-                        bg-black/[0.05] text-[var(--muted)]">{day.tag}</span>
-                    </div>
-                    <div className="px-5 py-4 flex flex-col gap-4">
-                      {day.activities.map((act: Activity, i: number) => (
-                        <div key={i} className="flex gap-3">
-                          <span className="text-[11px] text-[var(--muted)] w-10 flex-shrink-0 pt-0.5 text-right">
-                            {act.time}
-                          </span>
-                          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1"
-                            style={{ background: ACT_COLORS[act.color] ?? 'var(--coral)' }} />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[13px] font-semibold text-[var(--ink)] mb-0.5">{act.name}</div>
-                            <div className="text-[12px] text-[var(--muted)] leading-relaxed">{act.desc}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Map */}
-            <div className="hidden lg:flex flex-col flex-1 p-4 pt-4">
-              <div className="flex-1 rounded-2xl overflow-hidden bg-white border border-black/[0.07]
-                shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
-                {selectedPins.length > 0 ? (
-                  <ItineraryMap selectedPins={selectedPins} />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-center p-8">
-                    <div className="text-3xl">🌍</div>
-                    <div className="text-[13px] font-semibold text-[var(--ink)]">{destination}</div>
-                    <div className="text-[12px] text-[var(--muted)]">选择收藏地点后显示路线</div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ResultView
+        itinerary={itinerary}
+        heroUrl={heroUrl}
+        destination={destination}
+        onBack={() => setView('form')}
+      />
     )
   }
 

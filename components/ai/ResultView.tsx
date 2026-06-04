@@ -1,0 +1,138 @@
+'use client'
+import { useState } from 'react'
+import AppNav from '@/components/AppNav'
+import ChatWidget from '@/components/ai/ChatWidget'
+import type { Itinerary, DayPlan, Activity } from '@/types/itinerary'
+
+const ACT_COLORS: Record<string, string> = {
+  coral:    'var(--coral)',
+  mint:     'var(--mint)',
+  amber:    'var(--amber)',
+  lavender: 'var(--lavender)',
+}
+
+interface Props {
+  itinerary: Itinerary
+  heroUrl: string | null
+  destination: string
+  onBack: () => void
+}
+
+export default function ResultView({ itinerary, heroUrl, destination, onBack }: Props) {
+  // Build quotes array — support both old single quote and new quotes array
+  const quotes = itinerary.quotes?.length
+    ? itinerary.quotes
+    : itinerary.quote
+      ? [{ text: itinerary.quote, author: itinerary.quoteAuthor ?? '' }]
+      : []
+
+  const [quoteIdx, setQuoteIdx] = useState(0)
+  const currentQuote = quotes[quoteIdx]
+
+  function nextQuote() {
+    setQuoteIdx(i => (i + 1) % quotes.length)
+  }
+
+  function openAuthor(author: string) {
+    window.open(`https://en.wikipedia.org/wiki/${encodeURIComponent(author)}`, '_blank')
+  }
+
+  return (
+    <div className="min-h-screen bg-[var(--sand)]">
+      <AppNav activePage="ai" />
+      <div className="pt-[54px]">
+
+        {/* ── Hero ── */}
+        <div className="relative bg-[#0f1923]">
+          {/* Full image — object-contain so nothing is cropped */}
+          {heroUrl && (
+            <img src={heroUrl} alt={destination}
+              className="w-full block"
+              style={{ maxHeight: '480px', objectFit: 'contain', width: '100%' }} />
+          )}
+          {/* Gradient overlay for readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10 pointer-events-none" />
+
+          {/* Quote — top right */}
+          {currentQuote && (
+            <div className="absolute top-5 right-6 max-w-sm text-right">
+              <p className="font-serif italic text-[18px] text-white leading-snug drop-shadow-lg">
+                &ldquo;{currentQuote.text}&rdquo;
+              </p>
+              {currentQuote.author && (
+                <button type="button" onClick={() => openAuthor(currentQuote.author)}
+                  className="text-[13px] text-white/70 mt-1.5 font-medium hover:text-white
+                    underline underline-offset-2 transition-colors">
+                  — {currentQuote.author} ↗
+                </button>
+              )}
+              {quotes.length > 1 && (
+                <button type="button" onClick={nextQuote}
+                  className="mt-2 ml-auto flex items-center gap-1 text-[11px] font-semibold
+                    text-white/60 hover:text-white transition-colors">
+                  下一句 →
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Title + meta + back button */}
+          <div className="absolute bottom-0 left-0 right-0 px-6 pb-6 flex items-end justify-between">
+            <div>
+              <h1 className="font-serif text-4xl font-bold text-white leading-tight drop-shadow-lg">
+                {itinerary.title}
+              </h1>
+              <div className="flex flex-wrap gap-3 mt-2">
+                {[
+                  `🗓 ${itinerary.totalDays} 天`,
+                  `🎯 ${itinerary.style}`,
+                  itinerary.pinCount > 0 ? `📍 ${itinerary.pinCount} 个收藏地点` : null,
+                ].filter(Boolean).map(t => (
+                  <span key={t} className="text-[12px] text-white/80">{t}</span>
+                ))}
+              </div>
+            </div>
+            <button type="button" onClick={onBack}
+              className="px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30
+                text-white text-[13px] font-semibold hover:bg-white/30 transition-all flex-shrink-0">
+              ← 重新规划
+            </button>
+          </div>
+        </div>
+
+        {/* ── Day cards ── */}
+        <div className="max-w-3xl mx-auto px-5 py-8 flex flex-col gap-5">
+          {itinerary.days.map((day: DayPlan) => (
+            <div key={day.day} className="bg-white rounded-2xl border border-black/[0.07]
+              shadow-[0_2px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+              <div className="flex items-center gap-3 px-5 py-3 border-b border-black/[0.06]">
+                <span className="font-serif text-[13px] font-bold text-[var(--coral)]">{day.day}</span>
+                <span className="font-semibold text-[15px] text-[var(--ink)]">{day.title}</span>
+                <span className="ml-auto text-[11px] font-semibold px-2.5 py-1 rounded-full
+                  bg-black/[0.05] text-[var(--muted)]">{day.tag}</span>
+              </div>
+              <div className="px-5 py-4 flex flex-col gap-5">
+                {day.activities.map((act: Activity, i: number) => (
+                  <div key={i} className="flex gap-3">
+                    <span className="text-[11px] text-[var(--muted)] w-10 flex-shrink-0 pt-0.5 text-right font-medium">
+                      {act.time}
+                    </span>
+                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1"
+                      style={{ background: ACT_COLORS[act.color] ?? 'var(--coral)' }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[14px] font-semibold text-[var(--ink)] mb-0.5">{act.name}</div>
+                      <div className="text-[13px] text-[var(--muted)] leading-relaxed">{act.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Floating chat */}
+      <ChatWidget destination={destination} />
+    </div>
+  )
+}

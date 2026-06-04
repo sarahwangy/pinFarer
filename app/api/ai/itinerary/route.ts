@@ -43,8 +43,11 @@ Return ONLY a valid JSON object matching this exact schema (no markdown, no code
   "totalDays": ${days},
   "pinCount": <number of saved places actually used>,
   "style": "${style}",
-  "quote": "<one famous, poetic, or inspiring quote about this destination, its country, or travel in general — from a real writer, poet, traveler, or historical figure. In the original language (French for Paris, English for others etc.) Keep it under 25 words.>",
-  "quoteAuthor": "<Full name of the person who said it, e.g. 'Victor Hugo' or 'Hemingway'>",
+  "quotes": [
+    {"text": "<quote 1 — under 20 words, real person, original language>", "author": "<Full name>"},
+    {"text": "<quote 2 — different person, same rules>", "author": "<Full name>"},
+    {"text": "<quote 3 — different person, same rules>", "author": "<Full name>"}
+  ],
   "days": [
     {
       "day": "Day 1",

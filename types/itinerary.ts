@@ -20,4 +20,5 @@ export interface Itinerary {
   totalDays: number
   quote?: string
   quoteAuthor?: string
+  quotes?: { text: string; author: string }[]
 }
