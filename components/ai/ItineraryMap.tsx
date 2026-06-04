@@ -129,7 +129,7 @@ export default function ItineraryMap({ selectedPins }: Props) {
         paint: {
           'line-color': '#1D4ED8',
           'line-width': routeCoords ? 5 : 4,
-          'line-dasharray': routeCoords ? [1, 0] : [3, 2],
+          
           'line-opacity': 1,
         },
       })
