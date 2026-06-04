@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import AppNav from '@/components/AppNav'
 import type { Pin } from '@/types/pin'
 import type { Itinerary, DayPlan, Activity } from '@/types/itinerary'
 
@@ -91,17 +91,7 @@ export default function AIPage() {
 
   return (
     <div className="min-h-screen bg-[var(--sand)]">
-      <nav className="fixed top-0 left-0 right-0 h-[54px] bg-white/[0.97] backdrop-blur-md
-        border-b border-black/[0.07] shadow-sm flex items-center px-5 z-50">
-        <div className="font-serif text-[20px] font-bold text-[var(--ink)] flex items-center gap-2 mr-8">
-          <span className="w-2.5 h-2.5 rounded-full bg-[var(--coral)]" />
-          Pinfarer
-        </div>
-        <Link href="/" className="text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition-colors mr-4">
-          ← 返回地图
-        </Link>
-        <span className="text-[13px] font-semibold text-[var(--ink)]">✦ AI 规划</span>
-      </nav>
+      <AppNav activePage="ai" />
 
       <div className="pt-[54px] flex h-screen overflow-hidden">
         {/* Left panel */}
@@ -160,6 +150,7 @@ export default function AIPage() {
               <div>
                 <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] block mb-2">行程天数</label>
                 <select
+                  title="行程天数"
                   value={days}
                   onChange={e => setDays(Number(e.target.value))}
                   className="w-full px-3 py-2 rounded-xl border border-black/[0.1] text-[13px]
@@ -171,6 +162,7 @@ export default function AIPage() {
               <div>
                 <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] block mb-2">旅行风格</label>
                 <select
+                  title="旅行风格"
                   value={style}
                   onChange={e => setStyle(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-black/[0.1] text-[13px]
@@ -188,6 +180,7 @@ export default function AIPage() {
                   const sel = prefTags.has(tag)
                   return (
                     <button
+                      type="button"
                       key={tag}
                       onClick={() => toggleTag(tag)}
                       className={`px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all
@@ -204,6 +197,7 @@ export default function AIPage() {
             </div>
 
             <button
+              type="button"
               onClick={handleGenerate}
               disabled={loading || !destination.trim()}
               className="w-full py-3 rounded-xl font-bold text-[14px] text-white transition-all

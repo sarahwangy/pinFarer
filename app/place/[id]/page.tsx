@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import type { Pin } from '@/types/pin'
+import AppNav from '@/components/AppNav'
 import PlaceInfoGrid from '@/components/place/PlaceInfoGrid'
 import PlaceStatus from '@/components/place/PlaceStatus'
 import PlaceNotes from '@/components/place/PlaceNotes'
@@ -47,16 +48,7 @@ export default async function PlacePage({ params }: { params: { id: string } }) 
 
   return (
     <div className="min-h-screen bg-[var(--sand)]">
-      <nav className="fixed top-0 left-0 right-0 h-[54px] bg-white/[0.97] backdrop-blur-md
-        border-b border-black/[0.07] shadow-sm flex items-center px-5 z-50">
-        <div className="font-serif text-[20px] font-bold text-[var(--ink)] flex items-center gap-2 mr-8">
-          <span className="w-2.5 h-2.5 rounded-full bg-[var(--coral)]" />
-          Pinfarer
-        </div>
-        <Link href="/" className="text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition-colors">
-          ← 返回地图
-        </Link>
-      </nav>
+      <AppNav activePage="place" />
 
       <div className="pt-[54px]">
         <PlaceHero pin={pin} />
