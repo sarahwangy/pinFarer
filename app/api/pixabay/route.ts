@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     q,
     image_type: 'photo',
     orientation: 'horizontal',
-    per_page: '1',
+    per_page: '3',
     safesearch: 'true',
   })
 
