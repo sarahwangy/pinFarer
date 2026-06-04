@@ -37,8 +37,8 @@ async function getStats(): Promise<DashboardStats> {
   const tagCounts: Record<string, number> = {}
 
   for (const pin of pins) {
-    byStatus[pin.status] = (byStatus[pin.status] ?? 0) + 1
-    bySource[pin.source] = (bySource[pin.source] ?? 0) + 1
+    if (pin.status in byStatus) byStatus[pin.status as PinStatus] += 1
+    if (pin.source in bySource) bySource[pin.source as PinSource] += 1
     if (pin.country) {
       countryCounts[pin.country] = (countryCounts[pin.country] ?? 0) + 1
     }
@@ -86,18 +86,18 @@ export default async function DashboardPage() {
         </div>
 
         {/* KPI cards */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: '全部地点', value: stats.total, color: 'var(--coral)' },
-            { label: '✓ 已到访', value: stats.byStatus.visited, color: 'var(--mint)' },
-            { label: '👁 想去', value: stats.byStatus.watchlist, color: 'var(--amber)' },
-            { label: '✨ 梦想', value: stats.byStatus.dream, color: 'var(--lavender)' },
-          ].map(({ label, value, color }) => (
+            { label: '全部地点', value: stats.total, color: 'var(--coral)', isTotal: true },
+            { label: '✓ 已到访', value: stats.byStatus.visited, color: 'var(--mint)', isTotal: false },
+            { label: '👁 想去', value: stats.byStatus.watchlist, color: 'var(--amber)', isTotal: false },
+            { label: '✨ 梦想', value: stats.byStatus.dream, color: 'var(--lavender)', isTotal: false },
+          ].map(({ label, value, color, isTotal }) => (
             <div key={label} className="bg-white rounded-2xl border border-black/[0.07]
               shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-5">
               <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-3">{label}</div>
               <div className="text-4xl font-serif font-bold" style={{ color }}>{value}</div>
-              {stats.total > 0 && (
+              {!isTotal && stats.total > 0 && (
                 <div className="text-[12px] text-[var(--muted)] mt-1">
                   {Math.round(value / stats.total * 100)}%
                 </div>
