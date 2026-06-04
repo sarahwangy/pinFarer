@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import StatusDonut from '@/components/dashboard/StatusDonut'
+import SourceBars from '@/components/dashboard/SourceBars'
 import type { Pin, PinStatus, PinSource } from '@/types/pin'
 
 export interface DashboardStats {
@@ -124,9 +125,7 @@ export default async function DashboardPage() {
           <div className="bg-white rounded-2xl border border-black/[0.07]
             shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-6">
             <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-4">发现来源</div>
-            <div className="flex items-center justify-center h-40 text-[var(--muted)] text-sm">
-              暂无图表
-            </div>
+            <SourceBars bySource={stats.bySource} />
           </div>
         </div>
 
