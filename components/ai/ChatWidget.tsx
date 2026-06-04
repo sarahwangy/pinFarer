@@ -4,19 +4,13 @@ import { useState, useRef, useEffect } from 'react'
 interface Message { role: 'user' | 'assistant'; content: string }
 interface Props { destination: string }
 
-// Simple markdown renderer — handles **bold**, *italic*, - lists, \n paragraphs
 function MarkdownText({ text }: { text: string }) {
   const lines = text.split('\n')
   const elements: React.ReactNode[] = []
 
   lines.forEach((line, li) => {
     const trimmed = line.trim()
-    if (!trimmed) {
-      elements.push(<div key={li} className="h-2" />)
-      return
-    }
-
-    // List item
+    if (!trimmed) { elements.push(<div key={li} className="h-2" />); return }
     if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
       elements.push(
         <div key={li} className="flex gap-1.5 items-start">
@@ -26,7 +20,6 @@ function MarkdownText({ text }: { text: string }) {
       )
       return
     }
-
     elements.push(<p key={li}>{inlineMarkdown(trimmed)}</p>)
   })
 
@@ -34,7 +27,6 @@ function MarkdownText({ text }: { text: string }) {
 }
 
 function inlineMarkdown(text: string): React.ReactNode[] {
-  // Split by **bold** and *italic*
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g)
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**'))
@@ -45,21 +37,57 @@ function inlineMarkdown(text: string): React.ReactNode[] {
   })
 }
 
+function exportPDF(destination: string, messages: Message[]) {
+  const win = window.open('', '_blank')
+  if (!win) return
+
+  const rows = messages.map(m => `
+    <div class="${m.role === 'user' ? 'user-msg' : 'ai-msg'}">
+      <div class="role">${m.role === 'user' ? '我' : 'Claude'}</div>
+      <div class="bubble">${m.content.replace(/\n/g, '<br/>')}</div>
+    </div>
+  `).join('')
+
+  win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>${destination} · 旅行对话记录</title>
+<style>
+  body { font-family: -apple-system, sans-serif; max-width: 680px; margin: 40px auto; padding: 0 24px; color: #2D2826; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .date { font-size: 12px; color: #A09890; margin-bottom: 32px; }
+  .user-msg, .ai-msg { margin-bottom: 20px; }
+  .role { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    color: #A09890; margin-bottom: 6px; }
+  .bubble { font-size: 14px; line-height: 1.7; padding: 12px 16px; border-radius: 12px; }
+  .user-msg .bubble { background: #27A060; color: #fff; }
+  .ai-msg .bubble { background: #F7F3EE; color: #2D2826; border: 1px solid rgba(0,0,0,.07); }
+  @media print { body { margin: 20px; } }
+</style>
+</head>
+<body>
+  <h1>✈️ ${destination} · 旅行对话记录</h1>
+  <div class="date">${new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' })}</div>
+  ${rows}
+  <script>window.onload = () => { window.print(); }<\/script>
+</body>
+</html>`)
+  win.document.close()
+}
+
 export default function ChatWidget({ destination }: Props) {
   const [open, setOpen] = useState(false)
   const [history, setHistory] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [showHint, setShowHint] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [savedMsg, setSavedMsg] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [history, open])
 
-  // Hide hint after 4 seconds
   useEffect(() => {
     const t = setTimeout(() => setShowHint(false), 4000)
     return () => clearTimeout(t)
@@ -87,38 +115,14 @@ export default function ChatWidget({ destination }: Props) {
     }
   }
 
-  async function saveChat() {
-    if (!history.length || saving) return
-    setSaving(true)
-    try {
-      const res = await fetch('/api/ai/save-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ destination, messages: history }),
-      })
-      if (res.ok) {
-        setSavedMsg('已保存！')
-        setTimeout(() => setSavedMsg(null), 2500)
-      } else {
-        setSavedMsg('保存失败')
-        setTimeout(() => setSavedMsg(null), 2500)
-      }
-    } catch {
-      setSavedMsg('保存失败')
-      setTimeout(() => setSavedMsg(null), 2500)
-    } finally {
-      setSaving(false)
-    }
-  }
-
   return (
     <>
-      {/* Modal backdrop */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}>
           <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
             style={{ height: 'min(680px, 85vh)' }}>
+
             {/* Header */}
             <div className="flex items-center gap-3 px-5 py-4 bg-[var(--forest)] text-white flex-shrink-0">
               <span className="text-xl">✦</span>
@@ -126,19 +130,12 @@ export default function ChatWidget({ destination }: Props) {
                 <div className="text-[15px] font-bold">问问 Claude</div>
                 <div className="text-[12px] opacity-70 truncate">关于 {destination} 的任何问题</div>
               </div>
-              {/* Save button — only show when there's conversation */}
               {history.length > 0 && (
-                <button type="button" onClick={saveChat} disabled={saving}
+                <button type="button" onClick={() => exportPDF(destination, history)}
                   className="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 transition-colors
-                    text-[12px] font-semibold flex items-center gap-1.5 disabled:opacity-50">
-                  {savedMsg ?? (saving ? '保存中…' : '💾 保存对话')}
+                    text-[12px] font-semibold flex items-center gap-1.5">
+                  📄 导出 PDF
                 </button>
-              )}
-              {savedMsg === '已保存！' && (
-                <a href="/saved" target="_blank"
-                  className="text-[11px] text-white/70 hover:text-white underline ml-1">
-                  查看 →
-                </a>
               )}
               <button type="button" onClick={() => setOpen(false)}
                 className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 transition-colors
@@ -165,10 +162,7 @@ export default function ChatWidget({ destination }: Props) {
                       ? 'bg-[var(--forest)] text-white rounded-br-sm text-[14px]'
                       : 'bg-[var(--sand)] text-[var(--ink)] rounded-bl-sm border border-black/[0.07]'
                     }`}>
-                    {m.role === 'assistant'
-                      ? <MarkdownText text={m.content} />
-                      : m.content
-                    }
+                    {m.role === 'assistant' ? <MarkdownText text={m.content} /> : m.content}
                   </div>
                 </div>
               ))}
@@ -208,19 +202,15 @@ export default function ChatWidget({ destination }: Props) {
         </div>
       )}
 
-      {/* Floating button with pulse animation + hint tooltip */}
+      {/* Floating button */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
-        {/* Hint bubble — auto-hides after 4s */}
         {showHint && !open && (
           <div className="bg-[var(--ink)] text-white text-[12px] font-semibold px-3 py-1.5
             rounded-full shadow-lg animate-bounce whitespace-nowrap">
             ✦ 问我关于行程的问题
           </div>
         )}
-
-        {/* Button with pulsing ring */}
         <div className="relative">
-          {/* Pulsing ring */}
           {!open && (
             <span className="absolute inset-0 rounded-full bg-[var(--forest)] opacity-40 animate-ping" />
           )}
