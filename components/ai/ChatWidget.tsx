@@ -51,6 +51,8 @@ export default function ChatWidget({ destination }: Props) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [showHint, setShowHint] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [savedMsg, setSavedMsg] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -85,14 +87,38 @@ export default function ChatWidget({ destination }: Props) {
     }
   }
 
+  async function saveChat() {
+    if (!history.length || saving) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/ai/save-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destination, messages: history }),
+      })
+      if (res.ok) {
+        setSavedMsg('已保存！')
+        setTimeout(() => setSavedMsg(null), 2500)
+      } else {
+        setSavedMsg('保存失败')
+        setTimeout(() => setSavedMsg(null), 2500)
+      }
+    } catch {
+      setSavedMsg('保存失败')
+      setTimeout(() => setSavedMsg(null), 2500)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <>
       {/* Modal backdrop */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}>
-          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
-            style={{ height: '580px' }}>
+          <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+            style={{ height: 'min(680px, 85vh)' }}>
             {/* Header */}
             <div className="flex items-center gap-3 px-5 py-4 bg-[var(--forest)] text-white flex-shrink-0">
               <span className="text-xl">✦</span>
@@ -100,9 +126,23 @@ export default function ChatWidget({ destination }: Props) {
                 <div className="text-[15px] font-bold">问问 Claude</div>
                 <div className="text-[12px] opacity-70 truncate">关于 {destination} 的任何问题</div>
               </div>
+              {/* Save button — only show when there's conversation */}
+              {history.length > 0 && (
+                <button type="button" onClick={saveChat} disabled={saving}
+                  className="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 transition-colors
+                    text-[12px] font-semibold flex items-center gap-1.5 disabled:opacity-50">
+                  {savedMsg ?? (saving ? '保存中…' : '💾 保存对话')}
+                </button>
+              )}
+              {savedMsg === '已保存！' && (
+                <a href="/saved" target="_blank"
+                  className="text-[11px] text-white/70 hover:text-white underline ml-1">
+                  查看 →
+                </a>
+              )}
               <button type="button" onClick={() => setOpen(false)}
                 className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 transition-colors
-                  flex items-center justify-center text-[16px] font-bold">
+                  flex items-center justify-center text-[16px] font-bold ml-1">
                 ✕
               </button>
             </div>

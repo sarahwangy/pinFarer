@@ -94,7 +94,8 @@ Rules:
   try {
     const parsed = JSON.parse(sanitized) as Itinerary
     if (!parsed.days || !Array.isArray(parsed.days)) throw new Error('invalid shape')
-    cache.set(cacheKey, parsed)   // store so next identical request is free
+    // Only cache responses that include the new quotes array — stale cached responses lack it
+    if (parsed.quotes?.length) cache.set(cacheKey, parsed)
     return NextResponse.json(parsed)
   } catch (err) {
     console.error('[itinerary] parse error:', err, '\nraw:', raw.slice(0, 500))

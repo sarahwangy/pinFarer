@@ -19,7 +19,6 @@ interface Props {
 }
 
 export default function ResultView({ itinerary, heroUrl, destination, onBack }: Props) {
-  // Build quotes array — support both old single quote and new quotes array
   const quotes = itinerary.quotes?.length
     ? itinerary.quotes
     : itinerary.quote
@@ -29,10 +28,7 @@ export default function ResultView({ itinerary, heroUrl, destination, onBack }: 
   const [quoteIdx, setQuoteIdx] = useState(0)
   const currentQuote = quotes[quoteIdx]
 
-  function nextQuote() {
-    setQuoteIdx(i => (i + 1) % quotes.length)
-  }
-
+  function nextQuote() { setQuoteIdx(i => (i + 1) % quotes.length) }
   function openAuthor(author: string) {
     window.open(`https://en.wikipedia.org/wiki/${encodeURIComponent(author)}`, '_blank')
   }
@@ -43,51 +39,49 @@ export default function ResultView({ itinerary, heroUrl, destination, onBack }: 
       <div className="pt-[54px]">
 
         {/* ── Hero ── */}
-        <div className="relative bg-[#0f1923]">
-          {/* Full image — object-contain so nothing is cropped */}
+        <div className="relative bg-[#0f1923]" style={{ minHeight: '320px' }}>
           {heroUrl && (
             <img src={heroUrl} alt={destination}
               className="w-full block"
-              style={{ maxHeight: '480px', objectFit: 'contain', width: '100%' }} />
+              style={{ maxHeight: '420px', objectFit: 'contain', width: '100%' }} />
           )}
-          {/* Gradient overlay for readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20 pointer-events-none" />
 
-          {/* Quote — lower center-right, larger text */}
+          {/* Quote — upper right, clear of bottom title area */}
           {currentQuote && (
-            <div className="absolute bottom-24 right-6 max-w-md text-right">
-              <p className="font-serif italic text-[22px] text-white leading-snug drop-shadow-lg">
+            <div className="absolute top-6 right-6 max-w-sm text-right">
+              <p className="font-serif italic text-[20px] text-white leading-snug drop-shadow-lg">
                 &ldquo;{currentQuote.text}&rdquo;
               </p>
-              <div className="flex items-center justify-end gap-3 mt-2">
-                {currentQuote.author && (
-                  <div className="flex flex-col items-end gap-0.5">
-                    <button type="button" onClick={() => openAuthor(currentQuote.author)}
-                      className="text-[14px] text-white/80 font-medium hover:text-white
-                        underline underline-offset-2 transition-colors">
-                      — {currentQuote.author} ↗
-                    </button>
-                    <span className="text-[10px] text-white/40 font-medium tracking-wide">
-                      点击查看作者详情
-                    </span>
-                  </div>
-                )}
-                {quotes.length > 1 && (
-                  <button type="button" onClick={nextQuote}
-                    className="px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm
-                      border border-white/30 text-[12px] font-semibold text-white
-                      hover:bg-white/30 transition-all flex items-center gap-1">
-                    下一句 →
+              {currentQuote.author && (
+                <div className="mt-2 flex flex-col items-end gap-0.5">
+                  <button type="button" onClick={() => openAuthor(currentQuote.author)}
+                    className="text-[14px] text-white/85 font-medium hover:text-white
+                      underline underline-offset-2 transition-colors">
+                    — {currentQuote.author} ↗
                   </button>
-                )}
-              </div>
+                  <span className="text-[10px] text-white/45 font-medium tracking-wide">
+                    点击查看作者详情
+                  </span>
+                </div>
+              )}
+              {/* 下一句 button — always visible when multiple quotes */}
+              {quotes.length > 1 && (
+                <button type="button" onClick={nextQuote}
+                  className="mt-3 px-4 py-1.5 rounded-full bg-white/25 backdrop-blur-sm
+                    border border-white/40 text-[12px] font-bold text-white
+                    hover:bg-white/40 transition-all inline-flex items-center gap-1.5">
+                  下一句 →
+                  <span className="text-[10px] opacity-60">{quoteIdx + 1}/{quotes.length}</span>
+                </button>
+              )}
             </div>
           )}
 
-          {/* Title + meta + back button */}
-          <div className="absolute bottom-0 left-0 right-0 px-6 pb-6 flex items-end justify-between">
+          {/* Title + meta + back — bottom left/right */}
+          <div className="absolute bottom-0 left-0 right-0 px-6 pb-7 flex items-end justify-between gap-4">
             <div>
-              <h1 className="font-serif text-4xl font-bold text-white leading-tight drop-shadow-lg">
+              <h1 className="font-serif text-[38px] font-bold text-white leading-tight drop-shadow-lg">
                 {itinerary.title}
               </h1>
               <div className="flex flex-wrap gap-3 mt-2">
@@ -96,7 +90,7 @@ export default function ResultView({ itinerary, heroUrl, destination, onBack }: 
                   `🎯 ${itinerary.style}`,
                   itinerary.pinCount > 0 ? `📍 ${itinerary.pinCount} 个收藏地点` : null,
                 ].filter(Boolean).map(t => (
-                  <span key={t} className="text-[12px] text-white/80">{t}</span>
+                  <span key={t} className="text-[13px] text-white/80">{t}</span>
                 ))}
               </div>
             </div>
@@ -139,7 +133,6 @@ export default function ResultView({ itinerary, heroUrl, destination, onBack }: 
         </div>
       </div>
 
-      {/* Floating chat */}
       <ChatWidget destination={destination} />
     </div>
   )
