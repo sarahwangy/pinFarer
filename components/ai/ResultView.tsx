@@ -53,26 +53,34 @@ export default function ResultView({ itinerary, heroUrl, destination, onBack }: 
           {/* Gradient overlay for readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10 pointer-events-none" />
 
-          {/* Quote — top right */}
+          {/* Quote — lower center-right, larger text */}
           {currentQuote && (
-            <div className="absolute top-5 right-6 max-w-sm text-right">
-              <p className="font-serif italic text-[18px] text-white leading-snug drop-shadow-lg">
+            <div className="absolute bottom-24 right-6 max-w-md text-right">
+              <p className="font-serif italic text-[22px] text-white leading-snug drop-shadow-lg">
                 &ldquo;{currentQuote.text}&rdquo;
               </p>
-              {currentQuote.author && (
-                <button type="button" onClick={() => openAuthor(currentQuote.author)}
-                  className="text-[13px] text-white/70 mt-1.5 font-medium hover:text-white
-                    underline underline-offset-2 transition-colors">
-                  — {currentQuote.author} ↗
-                </button>
-              )}
-              {quotes.length > 1 && (
-                <button type="button" onClick={nextQuote}
-                  className="mt-2 ml-auto flex items-center gap-1 text-[11px] font-semibold
-                    text-white/60 hover:text-white transition-colors">
-                  下一句 →
-                </button>
-              )}
+              <div className="flex items-center justify-end gap-3 mt-2">
+                {currentQuote.author && (
+                  <div className="flex flex-col items-end gap-0.5">
+                    <button type="button" onClick={() => openAuthor(currentQuote.author)}
+                      className="text-[14px] text-white/80 font-medium hover:text-white
+                        underline underline-offset-2 transition-colors">
+                      — {currentQuote.author} ↗
+                    </button>
+                    <span className="text-[10px] text-white/40 font-medium tracking-wide">
+                      点击查看作者详情
+                    </span>
+                  </div>
+                )}
+                {quotes.length > 1 && (
+                  <button type="button" onClick={nextQuote}
+                    className="px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm
+                      border border-white/30 text-[12px] font-semibold text-white
+                      hover:bg-white/30 transition-all flex items-center gap-1">
+                    下一句 →
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
