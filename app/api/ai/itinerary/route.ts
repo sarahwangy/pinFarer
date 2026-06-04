@@ -57,20 +57,23 @@ Rules:
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 2048,
+    max_tokens: 4096,
     messages: [{ role: 'user', content: prompt }],
   })
 
   const raw = message.content[0].type === 'text' ? message.content[0].text : '{}'
 
-  // Strip markdown code fences if Claude wrapped the JSON
-  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+  // Extract JSON: find the first { and last } to handle any surrounding text or code fences
+  const start = raw.indexOf('{')
+  const end = raw.lastIndexOf('}')
+  const jsonStr = start !== -1 && end > start ? raw.slice(start, end + 1) : raw
 
   try {
-    const parsed = JSON.parse(cleaned) as Itinerary
+    const parsed = JSON.parse(jsonStr) as Itinerary
     if (!parsed.days || !Array.isArray(parsed.days)) throw new Error('invalid shape')
     return NextResponse.json(parsed)
-  } catch {
-    return NextResponse.json({ error: 'Failed to parse itinerary', raw }, { status: 500 })
+  } catch (err) {
+    console.error('[itinerary] parse error:', err, '\nraw:', raw.slice(0, 500))
+    return NextResponse.json({ error: 'Failed to parse itinerary' }, { status: 500 })
   }
 }

@@ -29,7 +29,7 @@ export default function ItineraryMap({ selectedPins }: Props) {
 
       const map = new mapboxgl.Map({
         container: containerRef.current,
-        style: 'mapbox://styles/mapbox/light-v11',
+        style: 'mapbox://styles/mapbox/outdoors-v12',
         zoom: 3,
         center: [140, -30],
       })

@@ -43,6 +43,8 @@ export default function AIPage() {
   }, [])
 
   const selectedPins = pins.filter(p => selectedIds.has(p.id))
+  // Show max 12 pins to avoid privacy exposure; pins are already sorted by created_at desc
+  const displayPins = pins.slice(0, 12)
 
   function togglePin(id: string) {
     setSelectedIds(prev => {
@@ -109,7 +111,7 @@ export default function AIPage() {
                 选择要加入行程的地点
               </div>
               <div className="flex flex-wrap gap-2">
-                {pins.map(pin => {
+                {displayPins.map(pin => {
                   const sel = selectedIds.has(pin.id)
                   return (
                     <button

@@ -1,6 +1,7 @@
 'use client'
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import AppNav from '@/components/AppNav'
 import { parseKML } from '@/lib/kml-parser'
 import { parseGeoJSON } from '@/lib/geojson-parser'
 import { parseGoogleMapsCSV } from '@/lib/csv-parser'
@@ -140,17 +141,7 @@ export default function ImportPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F3EE]">
-      <nav className="fixed top-0 left-0 right-0 h-[54px] bg-white/[0.97] backdrop-blur-md
-        border-b border-black/[0.07] shadow-sm flex items-center px-5 z-50">
-        <div className="font-serif text-[20px] font-bold text-[var(--ink)] flex items-center gap-2 mr-8">
-          <span className="w-2.5 h-2.5 rounded-full bg-[var(--coral)]" />
-          Pinfarer
-        </div>
-        <button onClick={() => router.push('/')}
-          className="text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition-colors">
-          ← 返回地图
-        </button>
-      </nav>
+      <AppNav activePage="import" />
 
       <div className="max-w-3xl mx-auto pt-[86px] pb-12 px-6">
         <h1 className="font-serif text-[28px] font-bold text-[var(--ink)] mb-1">
