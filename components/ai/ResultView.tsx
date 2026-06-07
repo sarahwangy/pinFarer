@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import AppNav from '@/components/AppNav'
 import ChatWidget from '@/components/ai/ChatWidget'
+import WeatherWidget from '@/components/ai/WeatherWidget'
 import type { Itinerary, DayPlan, Activity } from '@/types/itinerary'
 
 const ACT_COLORS: Record<string, string> = {
@@ -101,6 +102,9 @@ export default function ResultView({ itinerary, heroUrl, destination, onBack }: 
             </button>
           </div>
         </div>
+
+        {/* ── Weather Widget ── */}
+        <WeatherWidget destination={destination} />
 
         {/* ── Day cards ── */}
         <div className="max-w-3xl mx-auto px-5 py-8 flex flex-col gap-5">
