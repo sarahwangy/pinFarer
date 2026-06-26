@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pinfarer — Travel Map + AI Trip Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Caveat:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600&family=Noto+Serif+SC:wght@400;900&display=swap" rel="stylesheet">
+<style>
+/* =============================================
+   VIEWPORT-BASE.CSS — fixed 1920×1080 stage
+   ============================================= */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; background:#111; }
+.deck-viewport { position:fixed; inset:0; overflow:hidden; background:#111; }
+.deck-stage {
+  position:absolute; left:0; top:0;
+  width:1920px; height:1080px;
+  overflow:hidden; transform-origin:0 0;
+}
+.slide {
+  position:absolute; inset:0;
+  width:1920px; height:1080px; overflow:hidden;
+  visibility:hidden; opacity:0; pointer-events:none;
+  transition: opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1);
+  transform: translateY(20px);
+}
+.slide.active {
+  visibility:visible; opacity:1; pointer-events:auto;
+  transform: translateY(0); z-index:1;
+}
+@media (prefers-reduced-motion:reduce) {
+  .slide { transition-duration:0.01ms!important; }
+}
+@media print {
+  html,body { width:1920px; height:auto; overflow:visible; }
+  .deck-viewport { position:static; overflow:visible; }
+  .deck-stage { position:static; width:auto; height:auto; transform:none!important; }
+  .slide { position:relative; display:block!important; visibility:visible!important;
+           opacity:1!important; pointer-events:auto!important; transform:none!important;
+           width:1920px; height:1080px; break-after:page; page-break-after:always; }
+  .slide:last-child { break-after:auto; page-break-after:auto; }
+  .deck-chrome { display:none!important; }
+}
+
+/* =============================================
+   RETRO ZINE DESIGN SYSTEM
+   ============================================= */
+:root {
+  --bg:       #C8B99A;
+  --bg-dark:  #B8A98A;
+  --green:    #008F4D;
+  --green-lt: #00A85D;
+  --black:    #1A1A1A;
+  --cream:    #F4EFE6;
+
+  --ff-display: 'Bebas Neue', 'Noto Serif SC', sans-serif;
+  --ff-body:    'Space Grotesk', 'Noto Serif SC', sans-serif;
+  --ff-hand:    'Caveat', cursive;
+}
+
+/* =============================================
+   CANVAS
+   ============================================= */
+.canvas { position:absolute; inset:0; background:var(--bg); }
+.canvas-black { position:absolute; inset:0; background:var(--black); }
+.canvas-green { position:absolute; inset:0; background:var(--green); }
+
+/* =============================================
+   SVG GRAIN OVERLAY — required on every slide
+   ============================================= */
+.grain {
+  position:absolute; inset:0; pointer-events:none;
+  z-index:9000;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+  opacity:0.07;
+}
+
+/* =============================================
+   TYPOGRAPHY — fixed 1920×1080 sizes
+   ============================================= */
+.t-display-hero { font-family:var(--ff-display); font-size:160px; font-weight:400; line-height:0.85; letter-spacing:0.04em; text-transform:uppercase; }
+.t-display-cover { font-family:var(--ff-display); font-size:140px; font-weight:400; line-height:0.88; letter-spacing:0.04em; text-transform:uppercase; }
+.t-display { font-family:var(--ff-display); font-size:120px; font-weight:400; line-height:0.9; letter-spacing:0.04em; text-transform:uppercase; }
+.t-headline { font-family:var(--ff-display); font-size:90px; font-weight:400; line-height:0.95; letter-spacing:0.03em; text-transform:uppercase; }
+.t-headline-md { font-family:var(--ff-display); font-size:72px; font-weight:400; line-height:0.95; letter-spacing:0.03em; text-transform:uppercase; }
+.t-statement { font-family:var(--ff-display); font-size:82px; font-weight:400; line-height:1.0; letter-spacing:0.02em; text-transform:uppercase; }
+.t-title { font-family:var(--ff-display); font-size:42px; font-weight:400; line-height:1.1; letter-spacing:0.04em; text-transform:uppercase; }
+.t-num-hero { font-family:var(--ff-display); font-size:160px; font-weight:400; line-height:1.0; letter-spacing:0.02em; }
+.t-num-md { font-family:var(--ff-display); font-size:80px; font-weight:400; line-height:1.0; letter-spacing:0.02em; }
+.t-eyebrow { font-family:var(--ff-display); font-size:18px; font-weight:400; line-height:1.2; letter-spacing:0.2em; text-transform:uppercase; }
+.t-label { font-family:var(--ff-body); font-size:14px; font-weight:600; line-height:1.2; letter-spacing:0.25em; text-transform:uppercase; }
+.t-caption { font-family:var(--ff-display); font-size:14px; font-weight:400; line-height:1.2; letter-spacing:0.2em; text-transform:uppercase; }
+.t-body-md { font-family:var(--ff-body); font-size:18px; font-weight:400; line-height:1.6; }
+.t-body { font-family:var(--ff-body); font-size:16px; font-weight:400; line-height:1.7; }
+.t-hand { font-family:var(--ff-hand); font-size:36px; font-weight:600; line-height:1.3; }
+.t-hand-sm { font-family:var(--ff-hand); font-size:22px; font-weight:400; line-height:1.3; }
+.t-hand-lg { font-family:var(--ff-hand); font-size:42px; font-weight:600; line-height:1.3; }
+
+/* =============================================
+   STRUCTURAL COMPONENTS
+   ============================================= */
+
+/* borders */
+.border-3 { border:3px solid var(--black); }
+.border-2 { border:2px solid var(--black); }
+
+/* ribbon bar */
+.ribbon {
+  background:var(--green); color:var(--cream);
+  padding:6px 18px; display:inline-block;
+}
+.ribbon-wide { padding:10px 28px; }
+
+/* paper-on-paper offset card */
+.card-offset {
+  position:relative; background:var(--cream);
+  border:3px solid var(--black);
+}
+.card-offset::before {
+  content:''; position:absolute;
+  top:12px; left:12px; right:-12px; bottom:-12px;
+  background:var(--green); z-index:-1;
+  border:3px solid var(--black);
+}
+
+/* stamp mark */
+.stamp-mark {
+  background:var(--black); color:var(--green);
+  border:2px solid var(--green);
+  font-family:var(--ff-display); font-size:18px; letter-spacing:0.1em;
+  text-transform:uppercase; padding:10px 24px;
+  display:inline-block; transform:rotate(-8deg);
+}
+.stamp-alt { transform:rotate(6deg); }
+
+/* drop cap */
+.drop-cap {
+  float:left;
+  font-family:var(--ff-display); font-size:80px; font-weight:400;
+  line-height:0.8; color:var(--green);
+  margin-right:12px; margin-bottom:0;
+  text-transform:uppercase;
+}
+
+/* inline highlight */
+.hi {
+  background:var(--black); color:var(--bg);
+  padding:2px 8px; font-weight:600;
+}
+
+/* tape */
+.tape {
+  position:absolute;
+  background:rgba(255,255,255,0.42); border:1px solid rgba(0,0,0,0.1);
+  pointer-events:none;
+}
+
+/* line box */
+.line-box { border:3px solid var(--black); }
+
+/* divider stub */
+.stub { width:72px; height:4px; background:var(--green); }
+.stub-cream { background:var(--cream); }
+
+/* collage piece */
+.collage-piece { border:3px solid var(--black); position:absolute; padding:24px; }
+
+/* ledger */
+.ledger { border:3px solid var(--black); width:100%; }
+.ledger-head { display:flex; border-bottom:1.5px solid var(--black); background:var(--black); }
+.ledger-head-cell { padding:12px 24px; font-family:var(--ff-display); font-size:22px; letter-spacing:0.04em; text-transform:uppercase; color:var(--cream); flex:1; }
+.ledger-head-cell + .ledger-head-cell { border-left:1px solid rgba(255,255,255,0.2); }
+.ledger-row { display:flex; border-bottom:1px solid rgba(26,26,26,0.22); }
+.ledger-row:last-child { border-bottom:none; }
+.ledger-cell { padding:14px 24px; font-family:var(--ff-body); font-size:16px; flex:1; line-height:1.4; }
+.ledger-cell + .ledger-cell { border-left:1px solid rgba(26,26,26,0.22); }
+.ledger-cell.layer { font-family:var(--ff-display); font-size:16px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(26,26,26,0.5); }
+.chip {
+  display:inline-block; padding:3px 10px;
+  font-family:monospace; font-size:11px;
+  text-transform:uppercase; letter-spacing:0.06em;
+  color:var(--cream); background:var(--green);
+}
+.chip-black { background:var(--black); }
+
+/* =============================================
+   PERSISTENT CHROME (progress bar + counter)
+   ============================================= */
+.deck-chrome { position:fixed; bottom:0; left:0; right:0; z-index:9990; }
+.progress-bar {
+  position:absolute; bottom:0; left:0;
+  height:4px; background:var(--green);
+  transition:width 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+.slide-counter {
+  position:fixed; bottom:16px; right:24px; z-index:9991;
+  font-family:var(--ff-display); font-size:14px; letter-spacing:0.12em;
+  background:var(--cream); color:var(--black);
+  border:2px solid var(--black); padding:5px 14px;
+}
+.nav-hint {
+  position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:9991;
+  background:var(--black); color:var(--cream); padding:6px 18px;
+  font-family:var(--ff-display); font-size:13px; letter-spacing:0.12em;
+  opacity:0; transition:opacity 0.4s; pointer-events:none;
+}
+body:hover .nav-hint { opacity:1; }
+
+/* =============================================
+   SLIDE 1 — COVER
+   ============================================= */
+#s1 .cover-left {
+  position:absolute; left:0; top:0; bottom:0; width:780px;
+  background:var(--black);
+  padding:70px 72px;
+  display:flex; flex-direction:column; justify-content:space-between;
+}
+#s1 .cover-right {
+  position:absolute; left:780px; right:0; top:0; bottom:0;
+  padding:70px 72px;
+  display:flex; flex-direction:column; justify-content:space-between;
+}
+#s1 .pin-cluster {
+  position:absolute; right:96px; top:90px;
+  display:grid; grid-template-columns:repeat(3, 64px); gap:16px;
+}
+.pin-dot {
+  width:64px; height:64px; border:3px solid var(--black);
+  display:flex; align-items:center; justify-content:center;
+  font-size:26px;
+}
+
+/* =============================================
+   SLIDE 2 — THE PROBLEM
+   ============================================= */
+#s2 .prob-grid {
+  position:absolute; left:60px; right:60px; top:160px;
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:0;
+  border:3px solid var(--black);
+}
+.prob-cell { padding:48px 40px; border-right:3px solid var(--black); }
+.prob-cell:last-child { border-right:none; }
+.prob-num { font-family:var(--ff-display); font-size:110px; font-weight:400; line-height:0.85; letter-spacing:0.02em; }
+.prob-title { font-family:var(--ff-display); font-size:40px; text-transform:uppercase; letter-spacing:0.03em; margin:16px 0 12px; }
+.prob-body { font-family:var(--ff-body); font-size:17px; line-height:1.65; color:var(--black); }
+
+/* =============================================
+   SLIDE 3 — HOW IT WORKS
+   ============================================= */
+#s3 .flow-track {
+  position:absolute; left:60px; right:60px; top:160px; bottom:100px;
+  display:flex; align-items:stretch; gap:0;
+  border:3px solid var(--black);
+}
+.flow-step { flex:1; padding:48px 40px; position:relative; border-right:3px solid var(--black); }
+.flow-step:last-child { border-right:none; background:var(--green); }
+.flow-step-num {
+  font-family:var(--ff-display); font-size:120px; font-weight:400;
+  line-height:0.85; color:rgba(26,26,26,0.12); position:absolute;
+  bottom:24px; right:24px;
+}
+.flow-step:last-child .flow-step-num { color:rgba(244,239,230,0.15); }
+.flow-icon { font-size:52px; margin-bottom:24px; line-height:1; }
+.flow-title { font-family:var(--ff-display); font-size:40px; text-transform:uppercase; letter-spacing:0.03em; margin-bottom:16px; }
+.flow-body { font-family:var(--ff-body); font-size:17px; line-height:1.65; }
+
+/* =============================================
+   SLIDE 4 — MAP
+   ============================================= */
+#s4 .left-col { position:absolute; left:60px; top:160px; bottom:80px; width:720px; }
+#s4 .right-col { position:absolute; left:820px; right:60px; top:150px; bottom:80px; }
+.map-mockup {
+  width:100%; height:100%; border:3px solid var(--black);
+  background:var(--black); position:relative; overflow:hidden;
+}
+.map-grid-line {
+  position:absolute; background:rgba(0,143,77,0.12);
+}
+.map-pin-dot {
+  position:absolute; width:16px; height:16px;
+  border-radius:50%; border:2px solid var(--black);
+}
+.map-label {
+  font-family:var(--ff-display); font-size:13px; letter-spacing:0.12em;
+  text-transform:uppercase; position:absolute;
+}
+
+/* =============================================
+   SLIDE 5 — PLACE DETAILS
+   ============================================= */
+#s5 .detail-card {
+  position:absolute; left:60px; top:155px; width:840px; bottom:80px;
+}
+#s5 .side-stack {
+  position:absolute; left:960px; right:60px; top:155px; bottom:80px;
+  display:flex; flex-direction:column; gap:0;
+}
+.place-field {
+  border:3px solid var(--black); border-bottom:none; padding:18px 28px;
+  display:flex; align-items:baseline; gap:16px;
+}
+.place-field:last-child { border-bottom:3px solid var(--black); }
+.field-label { font-family:var(--ff-display); font-size:16px; letter-spacing:0.18em; text-transform:uppercase; color:var(--green); min-width:160px; }
+.field-val { font-family:var(--ff-body); font-size:17px; color:var(--black); }
+.ai-block {
+  border:3px solid var(--black); padding:36px 32px;
+  background:var(--green); flex:1;
+}
+
+/* =============================================
+   SLIDE 6 — DASHBOARD
+   ============================================= */
+#s6 .kpi-row {
+  position:absolute; left:60px; right:60px; top:155px;
+  display:flex; gap:0; border:3px solid var(--black);
+}
+.kpi-cell {
+  flex:1; padding:36px 32px; border-right:3px solid var(--black);
+}
+.kpi-cell:last-child { border-right:none; background:var(--bg-dark); }
+.kpi-num { font-family:var(--ff-display); font-size:96px; font-weight:400; line-height:0.9; letter-spacing:0.02em; }
+.kpi-label { font-family:var(--ff-display); font-size:17px; letter-spacing:0.15em; text-transform:uppercase; margin-top:12px; opacity:0.6; }
+#s6 .chart-row {
+  position:absolute; left:60px; right:60px; top:440px; bottom:80px;
+  display:flex; gap:0; border:3px solid var(--black); border-top:none;
+}
+.chart-cell { flex:1; padding:36px 32px; border-right:3px solid var(--black); }
+.chart-cell:last-child { border-right:none; }
+.bar-row { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.bar-label { font-family:var(--ff-body); font-size:15px; min-width:100px; color:var(--black); }
+.bar-track { flex:1; height:18px; background:rgba(26,26,26,0.1); border:1.5px solid var(--black); }
+.bar-fill { height:100%; background:var(--green); }
+.bar-pct { font-family:var(--ff-display); font-size:15px; letter-spacing:0.06em; min-width:40px; text-align:right; }
+.donut-ring {
+  width:180px; height:180px;
+  border-radius:50%;
+  background: conic-gradient(
+    var(--green) 0% 42%,
+    var(--black) 42% 68%,
+    var(--bg-dark) 68% 100%
+  );
+  border:3px solid var(--black);
+  position:relative;
+  margin:0 auto;
+}
+.donut-hole {
+  position:absolute; inset:36px; border-radius:50%;
+  background:var(--bg); border:3px solid var(--black);
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* =============================================
+   SLIDE 7 — AI TRIP PLANNER
+   ============================================= */
+#s7 .planner-left {
+  position:absolute; left:60px; top:155px; bottom:80px; width:660px;
+}
+#s7 .planner-right {
+  position:absolute; left:760px; right:60px; top:155px; bottom:80px;
+}
+.itin-day {
+  border:3px solid var(--black); border-bottom:none;
+  display:flex; align-items:stretch;
+}
+.itin-day:last-child { border-bottom:3px solid var(--black); }
+.itin-day-num {
+  font-family:var(--ff-display); font-size:52px; letter-spacing:0.02em;
+  min-width:100px; padding:20px 18px;
+  border-right:3px solid var(--black);
+  display:flex; align-items:center; justify-content:center;
+  background:var(--green); color:var(--cream);
+}
+.itin-day-content { padding:20px 24px; }
+.itin-day-city { font-family:var(--ff-display); font-size:30px; letter-spacing:0.03em; text-transform:uppercase; margin-bottom:8px; }
+.itin-day-acts { font-family:var(--ff-body); font-size:15px; color:rgba(26,26,26,0.7); line-height:1.55; }
+.config-row {
+  display:flex; align-items:baseline; gap:20px;
+  border-bottom:1.5px solid var(--black); padding:14px 0;
+}
+.config-label { font-family:var(--ff-display); font-size:16px; letter-spacing:0.18em; text-transform:uppercase; color:var(--green); min-width:120px; }
+.config-val { font-family:var(--ff-hand); font-size:24px; font-weight:600; color:var(--black); border-bottom:2px solid var(--black); flex:1; padding-bottom:4px; }
+
+/* =============================================
+   SLIDE 8 — KML IMPORT
+   ============================================= */
+#s8 .import-left { position:absolute; left:60px; top:155px; bottom:80px; width:700px; }
+#s8 .import-right { position:absolute; left:800px; right:60px; top:155px; bottom:80px; }
+.kml-table { border:3px solid var(--black); width:100%; }
+.kml-head { display:flex; background:var(--black); }
+.kml-head-cell { padding:14px 20px; font-family:var(--ff-display); font-size:18px; letter-spacing:0.1em; text-transform:uppercase; color:var(--cream); flex:1; border-right:1px solid rgba(255,255,255,0.15); }
+.kml-head-cell:last-child { border-right:none; }
+.kml-row { display:flex; border-top:1px solid rgba(26,26,26,0.2); }
+.kml-row:nth-child(2n) { background:rgba(0,0,0,0.03); }
+.kml-cell { padding:12px 20px; font-family:var(--ff-body); font-size:15px; flex:1; border-right:1px solid rgba(26,26,26,0.15); }
+.kml-cell:last-child { border-right:none; }
+.status-badge {
+  display:inline-block; padding:3px 12px;
+  font-family:var(--ff-display); font-size:13px; letter-spacing:0.1em;
+  text-transform:uppercase; border:2px solid var(--black);
+}
+
+/* =============================================
+   SLIDE 9 — TECH STACK
+   ============================================= */
+#s9 .tech-left { position:absolute; left:60px; top:155px; width:520px; bottom:80px; }
+#s9 .tech-right { position:absolute; left:620px; right:60px; top:155px; bottom:80px; }
+
+/* =============================================
+   SLIDE 10 — CLOSING (BLACK)
+   ============================================= */
+#s10 .close-left {
+  position:absolute; left:0; top:0; bottom:0; width:980px;
+  padding:80px 80px; display:flex; flex-direction:column; justify-content:space-between;
+}
+#s10 .close-right {
+  position:absolute; left:980px; right:0; top:0; bottom:0;
+  border-left:3px solid rgba(244,239,230,0.2);
+  padding:80px 72px; display:flex; flex-direction:column; justify-content:center; gap:40px;
+}
+#s10 .url-block {
+  border:3px solid rgba(244,239,230,0.4); padding:44px 40px;
+  position:relative;
+}
+#s10 .url-block::before {
+  content:''; position:absolute;
+  top:10px; left:10px; right:-10px; bottom:-10px;
+  background:var(--green); z-index:-1;
+  border:3px solid rgba(244,239,230,0.4);
+}
+#s10 .github-block {
+  border:2px solid rgba(244,239,230,0.25); padding:28px 32px;
+}
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+<main class="deck-stage" id="deckStage">
+
+<!-- ===========================
+     SLIDE 1 — COVER
+     =========================== -->
+<section class="slide active" id="s1">
+  <div class="canvas-black"></div>
+  <div class="grain"></div>
+
+  <!-- Left panel: black -->
+  <div class="cover-left">
+    <div>
+      <div class="ribbon ribbon-wide t-eyebrow" style="display:inline-block;margin-bottom:40px;">Personal Travel Map</div>
+      <div class="t-display-hero" style="color:var(--cream);">PIN<br>FARER</div>
+    </div>
+    <div>
+      <div class="t-hand" style="color:var(--green);margin-bottom:14px;">— Every destination has a story.</div>
+      <div class="t-body-md" style="color:rgba(244,239,230,0.6);max-width:520px;">
+        Pin places you've visited, want to visit, or dream about.
+        Let Claude build your itinerary.
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel: khaki -->
+  <div class="cover-right" style="background:var(--bg);">
+    <!-- Grid decoration -->
+    <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
+      <div style="position:absolute;top:0;left:0;right:0;bottom:0;
+                  background-image:linear-gradient(rgba(26,26,26,0.08) 1px,transparent 1px),
+                                   linear-gradient(90deg,rgba(26,26,26,0.08) 1px,transparent 1px);
+                  background-size:80px 80px;"></div>
+    </div>
+
+    <!-- Stamp mark rotated -->
+    <div class="stamp-mark" style="position:absolute;top:80px;right:96px;font-size:20px;">Live Now ↗</div>
+
+    <!-- Pin status cards -->
+    <div style="position:absolute;right:72px;top:160px;display:flex;flex-direction:column;gap:0;width:560px;">
+      <div style="background:var(--cream);border:3px solid var(--black);padding:32px 36px;display:flex;align-items:center;gap:28px;">
+        <div style="width:48px;height:48px;border-radius:50%;background:var(--green);border:3px solid var(--black);flex-shrink:0;"></div>
+        <div>
+          <div class="t-eyebrow" style="color:var(--green);">Visited</div>
+          <div class="t-body" style="margin-top:4px;">Places you've been. Marked with memories.</div>
+        </div>
+        <div class="t-num-md" style="margin-left:auto;color:var(--green);">23</div>
+      </div>
+      <div style="background:var(--bg);border:3px solid var(--black);border-top:none;padding:32px 36px;display:flex;align-items:center;gap:28px;">
+        <div style="width:48px;height:48px;background:#D4A017;border:3px solid var(--black);flex-shrink:0;"></div>
+        <div>
+          <div class="t-eyebrow" style="color:var(--black);">Watchlist</div>
+          <div class="t-body" style="margin-top:4px;">From YouTube, 小红书, vlogs, articles.</div>
+        </div>
+        <div class="t-num-md" style="margin-left:auto;">61</div>
+      </div>
+      <div style="background:var(--bg-dark);border:3px solid var(--black);border-top:none;padding:32px 36px;display:flex;align-items:center;gap:28px;">
+        <div style="width:48px;height:48px;background:#5B8EC4;border:3px solid var(--black);flex-shrink:0;"></div>
+        <div>
+          <div class="t-eyebrow" style="color:var(--black);">Dream</div>
+          <div class="t-body" style="margin-top:4px;">Saved but no concrete plan. Yet.</div>
+        </div>
+        <div class="t-num-md" style="margin-left:auto;">18</div>
+      </div>
+    </div>
+
+    <!-- Bottom caveat -->
+    <div class="t-hand-sm" style="position:absolute;bottom:90px;left:72px;color:rgba(26,26,26,0.5);">
+      pinfarer.vercel.app
+    </div>
+
+    <!-- Slide number -->
+    <div class="t-body" style="position:absolute;bottom:90px;right:80px;opacity:0.4;">01 / 10</div>
+  </div>
+</section>
+
+
+<!-- ===========================
+     SLIDE 2 — THE PROBLEM
+     =========================== -->
+<section class="slide" id="s2">
+  <div class="canvas"></div>
+  <div class="grain"></div>
+
+  <!-- Header -->
+  <div style="position:absolute;left:60px;right:60px;top:56px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--black);padding-bottom:28px;">
+    <div class="t-eyebrow" style="color:var(--green);">The Problem</div>
+    <div class="stamp-mark">Issue #1</div>
+  </div>
+
+  <!-- Headline -->
+  <div style="position:absolute;left:60px;top:120px;">
+    <div class="t-headline" style="color:var(--green);">Every traveller knows this pain.</div>
+  </div>
+
+  <!-- Problem grid -->
+  <div class="prob-grid">
+    <div class="prob-cell" style="background:var(--cream);">
+      <div class="prob-num" style="color:var(--green);">01</div>
+      <div class="prob-title">Scattered saves</div>
+      <div class="prob-body">Browser bookmarks, WeChat messages, Notes app. A hidden Tuscany village — gone in three months.</div>
+    </div>
+    <div class="prob-cell" style="background:var(--bg-dark);">
+      <div class="prob-num" style="color:var(--black);">02</div>
+      <div class="prob-title">No context</div>
+      <div class="prob-body">Just a name. No "why I saved this." No source link. No "Visited" vs "Dreaming" signal.</div>
+    </div>
+    <div class="prob-cell" style="background:var(--black);">
+      <div class="prob-num" style="color:var(--green);">03</div>
+      <div class="prob-title" style="color:var(--cream);">Planning from scratch</div>
+      <div class="prob-body" style="color:rgba(244,239,230,0.65);">You have 40 saved pins. Building an itinerary still takes hours on Google Maps.</div>
+    </div>
+  </div>
+
+  <!-- Caveat note -->
+  <div class="t-hand" style="position:absolute;left:64px;bottom:52px;color:rgba(26,26,26,0.45);">
+    → Pinfarer solves all three.
+  </div>
+</section>
+
+
+<!-- ===========================
+     SLIDE 3 — HOW IT WORKS
+     =========================== -->
+<section class="slide" id="s3">
+  <div class="canvas"></div>
+  <div class="grain"></div>
+
+  <div style="position:absolute;left:60px;right:60px;top:56px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--black);padding-bottom:28px;">
+    <div class="t-eyebrow" style="color:var(--green);">How It Works</div>
+    <div class="t-hand-sm" style="color:rgba(26,26,26,0.5);">4-step flow</div>
+  </div>
+
+  <div style="position:absolute;left:60px;top:118px;">
+    <div class="t-headline" style="color:var(--black);">Pin. Explore. Plan. Go.</div>
+  </div>
+
+  <div class="flow-track">
+    <div class="flow-step" style="background:var(--cream);">
+      <div class="flow-step-num">1</div>
+      <div class="flow-icon">📍</div>
+      <div class="flow-title" style="color:var(--green);">Pin a place</div>
+      <div class="flow-body">Click the globe map or search. Set status: Visited, Watchlist, or Dream. Add your source (YouTube, 小红书, book, self-explored).</div>
+    </div>
+    <div class="flow-step" style="background:var(--bg);">
+      <div class="flow-step-num">2</div>
+      <div class="flow-icon">🤖</div>
+      <div class="flow-title" style="color:var(--green);">AI enriches it</div>
+      <div class="flow-body">Claude Sonnet generates a place introduction — population, language, currency, climate, food culture, visa, safety — in one click.</div>
+    </div>
+    <div class="flow-step" style="background:var(--bg-dark);">
+      <div class="flow-step-num">3</div>
+      <div class="flow-icon">📊</div>
+      <div class="flow-title" style="color:var(--black);">See your world</div>
+      <div class="flow-body">Dashboard shows KPIs, status donut, source breakdown, and country ranking. Your travel life in one view.</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num" style="color:rgba(244,239,230,0.15);">4</div>
+      <div class="flow-icon">✈️</div>
+      <div class="flow-title" style="color:var(--cream);">AI builds itinerary</div>
+      <div class="flow-body" style="color:rgba(244,239,230,0.8);">Select saved pins, set trip length and style. Claude reads your library and returns a day-by-day plan with a live map route.</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===========================
+     SLIDE 4 — INTERACTIVE GLOBE MAP
+     =========================== -->
+<section class="slide" id="s4">
+  <div class="canvas"></div>
+  <div class="grain"></div>
+
+  <div style="position:absolute;left:60px;right:60px;top:56px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--black);padding-bottom:28px;">
+    <div class="t-eyebrow" style="color:var(--green);">Feature 01</div>
+    <div class="ribbon t-eyebrow">Globe Map</div>
+  </div>
+
+  <div class="left-col">
+    <div class="t-headline-md" style="color:var(--green);">Your world.<br>On a globe.</div>
+    <div class="stub" style="margin:28px 0;"></div>
+    <div style="border:3px solid var(--black);">
+      <div class="place-field"><div class="field-label">Projection</div><div class="field-val">Mapbox Globe GL</div></div>
+      <div class="place-field"><div class="field-label">Pin states</div><div class="field-val">Visited · Watchlist · Dream</div></div>
+      <div class="place-field"><div class="field-label">Click-to-fly</div><div class="field-val">Smooth camera animation</div></div>
+      <div class="place-field"><div class="field-label">Filter</div><div class="field-val">By status + tags</div></div>
+      <div class="place-field" style="border-bottom:3px solid var(--black);"><div class="field-label">Sidebar</div><div class="field-val">Search + list all pins</div></div>
+    </div>
+    <div class="t-hand" style="margin-top:28px;color:rgba(26,26,26,0.5);">
+      — Drag, zoom, click. It's yours.
+    </div>
+  </div>
+
+  <div class="right-col">
+    <!-- Map mockup -->
+    <div class="map-mockup">
+      <!-- Ocean bg -->
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,#0a1628 0%,#0d2040 50%,#0a1628 100%);"></div>
+      <!-- Continent shapes (SVG overlay) -->
+      <svg viewBox="0 0 900 720" style="position:absolute;inset:0;width:100%;height:100%;" xmlns="http://www.w3.org/2000/svg">
+        <!-- Europe rough -->
+        <path d="M380 180 L420 160 L460 170 L480 200 L470 230 L440 240 L410 235 L390 210 Z" fill="#B8A98A" stroke="#1A1A1A" stroke-width="2"/>
+        <!-- Asia rough -->
+        <path d="M480 140 L600 130 L660 160 L680 210 L650 260 L580 270 L520 250 L490 220 L480 180 Z" fill="#C8B99A" stroke="#1A1A1A" stroke-width="2"/>
+        <!-- Africa rough -->
+        <path d="M420 260 L460 250 L490 280 L490 360 L460 400 L430 400 L400 370 L395 310 Z" fill="#B8A98A" stroke="#1A1A1A" stroke-width="2"/>
+        <!-- Americas rough -->
+        <path d="M160 160 L220 150 L250 190 L240 260 L200 290 L160 270 L140 220 Z" fill="#C8B99A" stroke="#1A1A1A" stroke-width="2"/>
+        <path d="M190 300 L230 295 L240 340 L220 390 L190 420 L170 400 L165 360 L175 320 Z" fill="#B8A98A" stroke="#1A1A1A" stroke-width="2"/>
+        <!-- Australia rough -->
+        <path d="M620 360 L680 355 L710 380 L700 420 L670 435 L630 425 L615 400 L615 375 Z" fill="#C8B99A" stroke="#1A1A1A" stroke-width="2"/>
+        <!-- Pins -->
+        <!-- Tokyo - green (visited) -->
+        <circle cx="658" cy="198" r="10" fill="#008F4D" stroke="#1A1A1A" stroke-width="2"/>
+        <line x1="658" y1="198" x2="658" y2="175" stroke="#1A1A1A" stroke-width="2"/>
+        <!-- Paris - visited -->
+        <circle cx="415" cy="188" r="8" fill="#008F4D" stroke="#1A1A1A" stroke-width="2"/>
+        <!-- Tuscany - watchlist -->
+        <circle cx="440" cy="210" r="8" fill="#D4A017" stroke="#1A1A1A" stroke-width="2"/>
+        <!-- Kyoto - dream -->
+        <circle cx="640" cy="210" r="8" fill="#5B8EC4" stroke="#1A1A1A" stroke-width="2"/>
+        <!-- Melbourne - visited -->
+        <circle cx="672" cy="414" r="8" fill="#008F4D" stroke="#1A1A1A" stroke-width="2"/>
+        <!-- Patagonia - dream -->
+        <circle cx="200" cy="400" r="8" fill="#5B8EC4" stroke="#1A1A1A" stroke-width="2"/>
+        <!-- Labels -->
+        <text x="664" y="168" font-family="'Bebas Neue',sans-serif" font-size="16" fill="#F4EFE6" letter-spacing="1">TOKYO</text>
+        <text x="415" y="177" font-family="'Bebas Neue',sans-serif" font-size="14" fill="#F4EFE6" letter-spacing="1">PARIS</text>
+        <text x="680" y="204" font-family="'Bebas Neue',sans-serif" font-size="14" fill="rgba(244,239,230,0.6)" letter-spacing="1">KYOTO</text>
+      </svg>
+      <!-- Legend overlay -->
+      <div style="position:absolute;bottom:24px;left:24px;border:2px solid rgba(244,239,230,0.3);padding:14px 20px;background:rgba(10,22,40,0.75);">
+        <div style="display:flex;gap:20px;">
+          <div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:50%;background:#008F4D;border:1.5px solid #F4EFE6;"></div><span style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:0.1em;color:#F4EFE6;">VISITED</span></div>
+          <div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;background:#D4A017;border:1.5px solid #F4EFE6;"></div><span style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:0.1em;color:#F4EFE6;">WATCHLIST</span></div>
+          <div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;background:#5B8EC4;border:1.5px solid #F4EFE6;"></div><span style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:0.1em;color:#F4EFE6;">DREAM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===========================
+     SLIDE 5 — PLACE DETAILS
+     =========================== -->
+<section class="slide" id="s5">
+  <div class="canvas"></div>
+  <div class="grain"></div>
+
+  <div style="position:absolute;left:60px;right:60px;top:56px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--black);padding-bottom:28px;">
+    <div class="t-eyebrow" style="color:var(--green);">Feature 02</div>
+    <div class="ribbon t-eyebrow">Place Details</div>
+  </div>
+
+  <!-- Left: field list -->
+  <div class="detail-card">
+    <div style="background:var(--black);border:3px solid var(--black);padding:24px 28px;margin-bottom:0;">
+      <div class="t-headline-md" style="color:var(--cream);">Kyoto</div>
+      <div class="t-hand-sm" style="color:rgba(244,239,230,0.5);margin-top:6px;">Japan · East Asia · 35.0116° N, 135.7681° E</div>
+    </div>
+    <div style="border:3px solid var(--black);border-top:none;">
+      <div class="place-field"><div class="field-label">Status</div><div class="field-val"><span class="chip">Watchlist</span></div></div>
+      <div class="place-field"><div class="field-label">Source</div><div class="field-val">YouTube · Rick Steves Japan</div></div>
+      <div class="place-field"><div class="field-label">Population</div><div class="field-val">1.46 million</div></div>
+      <div class="place-field"><div class="field-label">Language</div><div class="field-val">Japanese</div></div>
+      <div class="place-field"><div class="field-label">Currency</div><div class="field-val">Japanese Yen (¥)</div></div>
+      <div class="place-field"><div class="field-label">Climate</div><div class="field-val">Humid subtropical · Cherry blossoms in April</div></div>
+      <div class="place-field"><div class="field-label">Visa</div><div class="field-val">Visa-free (AU passport, 90 days)</div></div>
+      <div class="place-field" style="border-bottom:3px solid var(--black);"><div class="field-label">Safety</div><div class="field-val">⭐⭐⭐⭐⭐ Very safe</div></div>
+    </div>
+    <div class="t-hand-sm" style="margin-top:20px;color:rgba(26,26,26,0.45);">
+      — saved from youtube vlog, march 2025
+    </div>
+  </div>
+
+  <!-- Right: AI block + nearby -->
+  <div class="side-stack">
+    <div class="ai-block">
+      <div class="t-eyebrow" style="color:rgba(244,239,230,0.6);margin-bottom:16px;">✦ Claude AI Introduction</div>
+      <div style="color:var(--cream);">
+        <span class="drop-cap" style="color:var(--cream);opacity:0.9;">K</span>
+        <span class="t-body-md" style="color:rgba(244,239,230,0.85);">yoto is Japan's ancient imperial capital — home to over 1,600 Buddhist temples, 400 Shinto shrines, 17 UNESCO World Heritage Sites, and the last living geiko districts. Where Tokyo accelerates, Kyoto remembers.</span>
+      </div>
+    </div>
+    <div style="border:3px solid var(--black);border-top:none;padding:28px 32px;">
+      <div class="t-eyebrow" style="color:var(--green);margin-bottom:18px;">Nearby in Japan</div>
+      <div style="display:flex;gap:0;">
+        <div style="border:3px solid var(--black);padding:14px 20px;flex:1;"><div class="t-caption">Osaka</div><div class="t-body" style="margin-top:4px;color:rgba(26,26,26,0.6);">45 min by shinkansen</div></div>
+        <div style="border:3px solid var(--black);border-left:none;padding:14px 20px;flex:1;"><div class="t-caption">Nara</div><div class="t-body" style="margin-top:4px;color:rgba(26,26,26,0.6);">45 min by local train</div></div>
+        <div style="border:3px solid var(--black);border-left:none;padding:14px 20px;flex:1;"><div class="t-caption">Hiroshima</div><div class="t-body" style="margin-top:4px;color:rgba(26,26,26,0.6);">1.5 hr by shinkansen</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===========================
+     SLIDE 6 — DASHBOARD
+     =========================== -->
+<section class="slide" id="s6">
+  <div class="canvas"></div>
+  <div class="grain"></div>
+
+  <div style="position:absolute;left:60px;right:60px;top:56px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--black);padding-bottom:28px;">
+    <div class="t-eyebrow" style="color:var(--green);">Feature 03</div>
+    <div class="ribbon t-eyebrow">Dashboard</div>
+  </div>
+
+  <!-- KPI row -->
+  <div class="kpi-row">
+    <div class="kpi-cell" style="background:var(--green);">
+      <div class="kpi-num" style="color:var(--cream);">102</div>
+      <div class="kpi-label" style="color:rgba(244,239,230,0.6);">Total Pins</div>
+    </div>
+    <div class="kpi-cell" style="background:var(--cream);">
+      <div class="kpi-num" style="color:var(--green);">23</div>
+      <div class="kpi-label">Visited</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-num">61</div>
+      <div class="kpi-label">Watchlist</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-num" style="color:var(--green);">18</div>
+      <div class="kpi-label">Dream</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-num">34</div>
+      <div class="kpi-label" style="color:rgba(26,26,26,0.55);">Countries</div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="chart-row">
+    <!-- Bar chart: by region -->
+    <div class="chart-cell">
+      <div class="t-eyebrow" style="color:var(--green);margin-bottom:28px;">Pins by Region</div>
+      <div class="bar-row"><div class="bar-label t-body">East Asia</div><div class="bar-track"><div class="bar-fill" style="width:74%;"></div></div><div class="bar-pct t-caption">38</div></div>
+      <div class="bar-row"><div class="bar-label t-body">Europe</div><div class="bar-track"><div class="bar-fill" style="width:52%;background:var(--black);"></div></div><div class="bar-pct t-caption">26</div></div>
+      <div class="bar-row"><div class="bar-label t-body">SE Asia</div><div class="bar-track"><div class="bar-fill" style="width:38%;background:var(--bg-dark);"></div></div><div class="bar-pct t-caption">20</div></div>
+      <div class="bar-row"><div class="bar-label t-body">Oceania</div><div class="bar-track"><div class="bar-fill" style="width:22%;"></div></div><div class="bar-pct t-caption">11</div></div>
+      <div class="bar-row"><div class="bar-label t-body">Americas</div><div class="bar-track"><div class="bar-fill" style="width:14%;background:var(--black);"></div></div><div class="bar-pct t-caption">7</div></div>
+    </div>
+
+    <!-- Donut chart: status -->
+    <div class="chart-cell" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div class="t-eyebrow" style="color:var(--green);margin-bottom:28px;">Status Distribution</div>
+      <div class="donut-ring">
+        <div class="donut-hole">
+          <div style="text-align:center;">
+            <div class="t-num-md" style="font-size:40px;">102</div>
+            <div class="t-caption" style="font-size:12px;">total</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:24px;">
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:14px;height:14px;background:var(--green);border:1.5px solid var(--black);"></div><div class="t-body" style="font-size:14px;">Visited 23%</div></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:14px;height:14px;background:var(--black);border:1.5px solid var(--black);"></div><div class="t-body" style="font-size:14px;">Watch 60%</div></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:14px;height:14px;background:var(--bg-dark);border:1.5px solid var(--black);"></div><div class="t-body" style="font-size:14px;">Dream 18%</div></div>
+      </div>
+    </div>
+
+    <!-- Source breakdown -->
+    <div class="chart-cell">
+      <div class="t-eyebrow" style="color:var(--green);margin-bottom:28px;">Discovery Source</div>
+      <div class="bar-row"><div class="bar-label t-body">YouTube</div><div class="bar-track"><div class="bar-fill" style="width:60%;"></div></div><div class="bar-pct t-caption">42%</div></div>
+      <div class="bar-row"><div class="bar-label t-body">小红书</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:var(--black);"></div></div><div class="bar-pct t-caption">21%</div></div>
+      <div class="bar-row"><div class="bar-label t-body">WeChat</div><div class="bar-track"><div class="bar-fill" style="width:22%;"></div></div><div class="bar-pct t-caption">15%</div></div>
+      <div class="bar-row"><div class="bar-label t-body">Books</div><div class="bar-track"><div class="bar-fill" style="width:18%;background:var(--bg-dark);"></div></div><div class="bar-pct t-caption">13%</div></div>
+      <div class="bar-row"><div class="bar-label t-body">Self</div><div class="bar-track"><div class="bar-fill" style="width:12%;background:var(--black);"></div></div><div class="bar-pct t-caption">9%</div></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===========================
+     SLIDE 7 — AI TRIP PLANNER
+     =========================== -->
+<section class="slide" id="s7">
+  <div class="canvas"></div>
+  <div class="grain"></div>
+
+  <div style="position:absolute;left:60px;right:60px;top:56px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--black);padding-bottom:28px;">
+    <div class="t-eyebrow" style="color:var(--green);">Feature 04</div>
+    <div class="ribbon t-eyebrow">AI Trip Planner</div>
+  </div>
+
+  <!-- Left: config form -->
+  <div class="planner-left">
+    <div class="t-headline-md" style="color:var(--green);">Claude plans<br>your trip.</div>
+    <div class="stub" style="margin:24px 0;"></div>
+
+    <!-- RSVP-style config card -->
+    <div style="border:3px solid var(--black);padding:36px 36px;background:var(--cream);position:relative;margin-top:4px;">
+      <div style="position:absolute;top:-18px;left:28px;" class="ribbon t-eyebrow">Your config</div>
+      <div class="config-row">
+        <div class="config-label">Destination</div>
+        <div class="config-val">Japan</div>
+      </div>
+      <div class="config-row">
+        <div class="config-label">Days</div>
+        <div class="config-val">10 days</div>
+      </div>
+      <div class="config-row">
+        <div class="config-label">Style</div>
+        <div class="config-val">Culture + food + slow travel</div>
+      </div>
+      <div class="config-row" style="border-bottom:none;padding-bottom:0;">
+        <div class="config-label">From pins</div>
+        <div class="config-val">Kyoto · Tokyo · Hiroshima</div>
+      </div>
+    </div>
+    <div class="t-hand-sm" style="margin-top:20px;color:rgba(26,26,26,0.45);">— SSE streaming · live Mapbox route line</div>
+  </div>
+
+  <!-- Right: generated itinerary -->
+  <div class="planner-right">
+    <div class="t-eyebrow" style="color:var(--green);margin-bottom:20px;">Generated Itinerary</div>
+    <div style="border:3px solid var(--black);">
+      <div class="itin-day">
+        <div class="itin-day-num">D1</div>
+        <div class="itin-day-content">
+          <div class="itin-day-city">Tokyo — Arrive + Asakusa</div>
+          <div class="itin-day-acts">Check in Shinjuku · Senso-ji Temple · Nakamise shopping · Yakitori dinner</div>
+        </div>
+      </div>
+      <div class="itin-day">
+        <div class="itin-day-num" style="background:var(--bg-dark);color:var(--black);">D2</div>
+        <div class="itin-day-content">
+          <div class="itin-day-city">Tokyo — Shibuya + Harajuku</div>
+          <div class="itin-day-acts">Meiji Shrine · Harajuku Takeshita · Shibuya Crossing · Izakaya evening</div>
+        </div>
+      </div>
+      <div class="itin-day">
+        <div class="itin-day-num">D3</div>
+        <div class="itin-day-content">
+          <div class="itin-day-city">Shinkansen → Hiroshima</div>
+          <div class="itin-day-acts">Peace Memorial Park + Museum · Ōkunoshima (rabbit island) day trip</div>
+        </div>
+      </div>
+      <div class="itin-day" style="background:rgba(0,143,77,0.06);">
+        <div class="itin-day-num" style="background:var(--cream);color:var(--black);">D4</div>
+        <div class="itin-day-content">
+          <div class="itin-day-city">Hiroshima → Kyoto</div>
+          <div class="itin-day-acts">Fushimi Inari gates at dawn · Gion walk · Kaiseki dinner</div>
+        </div>
+      </div>
+      <div class="itin-day">
+        <div class="itin-day-num" style="background:rgba(26,26,26,0.12);color:var(--black);">D5–10</div>
+        <div class="itin-day-content">
+          <div class="itin-day-city" style="color:rgba(26,26,26,0.4);">Kyoto deep-dive + day trips…</div>
+          <div class="itin-day-acts" style="color:rgba(26,26,26,0.35);">Arashiyama · Nara · Nishiki Market · Philosopher's Path</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===========================
+     SLIDE 8 — KML IMPORT
+     =========================== -->
+<section class="slide" id="s8">
+  <div class="canvas"></div>
+  <div class="grain"></div>
+
+  <div style="position:absolute;left:60px;right:60px;top:56px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--black);padding-bottom:28px;">
+    <div class="t-eyebrow" style="color:var(--green);">Feature 05</div>
+    <div class="ribbon t-eyebrow">KML Import</div>
+  </div>
+
+  <div class="import-left">
+    <div class="t-headline-md" style="color:var(--green);">Already use<br>Google Maps?<br>Bring it over.</div>
+    <div class="stub" style="margin:28px 0;"></div>
+    <div class="t-body-md" style="color:rgba(26,26,26,0.75);max-width:580px;margin-bottom:32px;">
+      Export your saved places from Google Takeout as a KML file.
+      Drag it into Pinfarer — it parses the name, coordinates, and lets you set status before importing.
+    </div>
+
+    <!-- Drag-drop zone mockup -->
+    <div style="border:3px dashed var(--black);padding:44px;text-align:center;background:rgba(244,239,230,0.5);">
+      <div style="font-size:48px;margin-bottom:16px;">📂</div>
+      <div class="t-title">Drop KML File Here</div>
+      <div class="t-hand-sm" style="color:rgba(26,26,26,0.45);margin-top:8px;">or click to browse · Google Takeout export</div>
+    </div>
+    <div class="t-hand-sm" style="margin-top:20px;color:rgba(26,26,26,0.45);">— Preview table before confirming import</div>
+  </div>
+
+  <div class="import-right">
+    <div class="t-eyebrow" style="color:var(--green);margin-bottom:20px;">Import Preview</div>
+    <div class="kml-table">
+      <div class="kml-head">
+        <div class="kml-head-cell">Place Name</div>
+        <div class="kml-head-cell" style="flex:0.6;">Country</div>
+        <div class="kml-head-cell" style="flex:0.8;">Set Status</div>
+      </div>
+      <div class="kml-row">
+        <div class="kml-cell">Senso-ji Temple</div>
+        <div class="kml-cell" style="flex:0.6;">Japan</div>
+        <div class="kml-cell" style="flex:0.8;"><span class="status-badge" style="background:var(--green);color:var(--cream);border-color:var(--green);">Visited</span></div>
+      </div>
+      <div class="kml-row">
+        <div class="kml-cell">Val d'Orcia</div>
+        <div class="kml-cell" style="flex:0.6;">Italy</div>
+        <div class="kml-cell" style="flex:0.8;"><span class="status-badge" style="background:var(--black);color:var(--cream);">Watchlist</span></div>
+      </div>
+      <div class="kml-row">
+        <div class="kml-cell">Patagonia, Torres del Paine</div>
+        <div class="kml-cell" style="flex:0.6;">Chile</div>
+        <div class="kml-cell" style="flex:0.8;"><span class="status-badge" style="background:#5B8EC4;color:var(--cream);border-color:#5B8EC4;">Dream</span></div>
+      </div>
+      <div class="kml-row">
+        <div class="kml-cell">Hội An Ancient Town</div>
+        <div class="kml-cell" style="flex:0.6;">Vietnam</div>
+        <div class="kml-cell" style="flex:0.8;"><span class="status-badge">Watchlist</span></div>
+      </div>
+      <div class="kml-row">
+        <div class="kml-cell">Faroe Islands</div>
+        <div class="kml-cell" style="flex:0.6;">Denmark</div>
+        <div class="kml-cell" style="flex:0.8;"><span class="status-badge" style="background:#5B8EC4;color:var(--cream);border-color:#5B8EC4;">Dream</span></div>
+      </div>
+      <div class="kml-row" style="background:rgba(0,143,77,0.06);">
+        <div class="kml-cell" style="color:rgba(26,26,26,0.35);">+ 37 more places…</div>
+        <div class="kml-cell" style="flex:0.6;"></div>
+        <div class="kml-cell" style="flex:0.8;"></div>
+      </div>
+    </div>
+    <div style="margin-top:24px;display:flex;gap:0;">
+      <div style="border:3px solid var(--black);padding:16px 36px;background:var(--green);">
+        <div class="t-eyebrow" style="color:var(--cream);">Import 42 places →</div>
+      </div>
+      <div style="border:3px solid var(--black);border-left:none;padding:16px 36px;background:var(--cream);">
+        <div class="t-eyebrow">Cancel</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===========================
+     SLIDE 9 — TECH STACK
+     =========================== -->
+<section class="slide" id="s9">
+  <div class="canvas"></div>
+  <div class="grain"></div>
+
+  <div style="position:absolute;left:60px;right:60px;top:56px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--black);padding-bottom:28px;">
+    <div class="t-eyebrow" style="color:var(--green);">Behind the Build</div>
+    <div class="ribbon t-eyebrow">Tech Stack</div>
+  </div>
+
+  <div class="tech-left">
+    <div class="t-headline-md" style="color:var(--green);margin-bottom:24px;">Built in<br>6 days.</div>
+    <div class="stub" style="margin-bottom:24px;"></div>
+    <div class="t-body-md" style="color:rgba(26,26,26,0.7);max-width:400px;margin-bottom:32px;">
+      Solo. Vibe-coded with Claude Code. Globe map, AI enrichment, and a full dashboard — shipped in one week.
+    </div>
+    <!-- Offset card for the stat -->
+    <div class="card-offset" style="padding:36px 40px;display:inline-block;margin-left:12px;margin-top:12px;">
+      <div class="t-num-hero" style="font-size:120px;color:var(--green);">6</div>
+      <div class="t-eyebrow" style="color:var(--black);">Days to ship</div>
+    </div>
+  </div>
+
+  <div class="tech-right">
+    <div class="ledger">
+      <div class="ledger-head">
+        <div class="ledger-head-cell" style="flex:0.6;">Layer</div>
+        <div class="ledger-head-cell">Technology</div>
+        <div class="ledger-head-cell" style="flex:1.6;">What it does</div>
+      </div>
+      <div class="ledger-row">
+        <div class="ledger-cell layer" style="flex:0.6;">Framework</div>
+        <div class="ledger-cell"><span class="chip">Next.js 14</span></div>
+        <div class="ledger-cell" style="flex:1.6;">App Router + TypeScript. SSR for place pages.</div>
+      </div>
+      <div class="ledger-row" style="background:rgba(0,0,0,0.025);">
+        <div class="ledger-cell layer" style="flex:0.6;">Map</div>
+        <div class="ledger-cell"><span class="chip chip-black">Mapbox GL</span></div>
+        <div class="ledger-cell" style="flex:1.6;">Globe projection. Click-to-fly. Route dashed lines.</div>
+      </div>
+      <div class="ledger-row">
+        <div class="ledger-cell layer" style="flex:0.6;">AI</div>
+        <div class="ledger-cell"><span class="chip">Claude Sonnet</span></div>
+        <div class="ledger-cell" style="flex:1.6;">Place intro + city data + day-by-day itinerary.</div>
+      </div>
+      <div class="ledger-row" style="background:rgba(0,0,0,0.025);">
+        <div class="ledger-cell layer" style="flex:0.6;">Database</div>
+        <div class="ledger-cell"><span class="chip chip-black">Supabase</span></div>
+        <div class="ledger-cell" style="flex:1.6;">PostgreSQL + JSONB. Stores all pins + AI summaries.</div>
+      </div>
+      <div class="ledger-row">
+        <div class="ledger-cell layer" style="flex:0.6;">Images</div>
+        <div class="ledger-cell"><span class="chip">Pixabay API</span></div>
+        <div class="ledger-cell" style="flex:1.6;">Server-side image proxy. Hero photos per place.</div>
+      </div>
+      <div class="ledger-row" style="background:rgba(0,0,0,0.025);">
+        <div class="ledger-cell layer" style="flex:0.6;">Auth</div>
+        <div class="ledger-cell"><span class="chip chip-black">NextAuth</span></div>
+        <div class="ledger-cell" style="flex:1.6;">Google OAuth. Demo mode — no account needed.</div>
+      </div>
+      <div class="ledger-row">
+        <div class="ledger-cell layer" style="flex:0.6;">Styling</div>
+        <div class="ledger-cell"><span class="chip">Tailwind + shadcn</span></div>
+        <div class="ledger-cell" style="flex:1.6;">Component library + utility CSS. Fast iteration.</div>
+      </div>
+      <div class="ledger-row" style="background:rgba(0,0,0,0.025);">
+        <div class="ledger-cell layer" style="flex:0.6;">Deploy</div>
+        <div class="ledger-cell"><span class="chip chip-black">Vercel</span></div>
+        <div class="ledger-cell" style="flex:1.6;">Auto-deploy on git push. pinfarer.vercel.app</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===========================
+     SLIDE 10 — CLOSING
+     =========================== -->
+<section class="slide" id="s10">
+  <div class="canvas-black"></div>
+  <div class="grain"></div>
+
+  <div class="close-left">
+    <!-- Eyebrow -->
+    <div>
+      <div class="ribbon ribbon-wide t-eyebrow" style="display:inline-block;margin-bottom:44px;">Open Source · Free to Try</div>
+      <div class="stub stub-cream" style="margin-bottom:32px;background:var(--green);"></div>
+      <div class="t-display-hero" style="color:var(--cream);">EVERY<br>PIN<br>HAS A<br>STORY.</div>
+    </div>
+
+    <div>
+      <div class="t-hand" style="color:var(--green);margin-bottom:14px;">
+        — Built for curious travellers.
+      </div>
+      <div class="t-body-md" style="color:rgba(244,239,230,0.5);">
+        Start with a KML import or pin your first dream destination in 30 seconds.
+      </div>
+    </div>
+  </div>
+
+  <div class="close-right">
+    <div class="url-block">
+      <div class="t-eyebrow" style="color:rgba(244,239,230,0.4);margin-bottom:12px;">Live Demo</div>
+      <div class="t-headline-md" style="color:var(--green);font-size:52px;">pinfarer<br>.vercel.app</div>
+    </div>
+
+    <div class="github-block">
+      <div class="t-eyebrow" style="color:rgba(244,239,230,0.3);margin-bottom:8px;">Source</div>
+      <div class="t-hand-sm" style="color:rgba(244,239,230,0.5);">github.com/sarahwangy/pinFarer</div>
+    </div>
+
+    <!-- Rotated stamp -->
+    <div class="stamp-mark stamp-alt" style="font-size:20px;align-self:flex-start;margin-top:8px;">
+      Try Demo Free
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+
+<!-- Chrome -->
+<div class="deck-chrome">
+  <div class="progress-bar" id="progressBar"></div>
+</div>
+<div class="slide-counter" id="slideCounter">01 / 10</div>
+<div class="nav-hint">← → to navigate</div>
+
+<script>
+(function(){
+  const stage   = document.getElementById('deckStage');
+  const slides  = Array.from(document.querySelectorAll('.slide'));
+  const counter = document.getElementById('slideCounter');
+  const bar     = document.getElementById('progressBar');
+  let current   = 0;
+  const total   = slides.length;
+
+  /* --- Stage scaling --- */
+  function scale(){
+    const f = Math.min(window.innerWidth/1920, window.innerHeight/1080);
+    const x = (window.innerWidth  - 1920*f)/2;
+    const y = (window.innerHeight - 1080*f)/2;
+    stage.style.transform = `translate(${x}px,${y}px) scale(${f})`;
+  }
+  scale(); window.addEventListener('resize', scale);
+
+  /* --- Show slide --- */
+  function go(i){
+    i = Math.max(0, Math.min(i, total-1));
+    slides.forEach((s,j) => {
+      s.classList.toggle('active', j===i);
+    });
+    current = i;
+    const pct = total > 1 ? ((i+1)/total)*100 : 100;
+    bar.style.width = pct + '%';
+    const n = String(i+1).padStart(2,'0');
+    counter.textContent = `${n} / ${String(total).padStart(2,'0')}`;
+  }
+  go(0);
+
+  /* --- Keyboard --- */
+  document.addEventListener('keydown', e=>{
+    if(['ArrowRight','ArrowDown',' ','PageDown','Enter'].includes(e.key)){ e.preventDefault(); go(current+1); }
+    if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ e.preventDefault(); go(current-1); }
+    if(e.key==='Home'){ e.preventDefault(); go(0); }
+    if(e.key==='End'){  e.preventDefault(); go(total-1); }
+  });
+
+  /* --- Click left/right half --- */
+  document.addEventListener('click', e=>{
+    const x = e.clientX / window.innerWidth;
+    if(x > 0.65) go(current+1);
+    else if(x < 0.35) go(current-1);
+  });
+
+  /* --- Touch swipe --- */
+  let tx=0;
+  window.addEventListener('touchstart', e=>{ tx=e.touches[0].clientX; },{passive:true});
+  window.addEventListener('touchend', e=>{
+    const dx = e.changedTouches[0].clientX - tx;
+    if(Math.abs(dx)>40){ dx<0 ? go(current+1) : go(current-1); }
+  },{passive:true});
+
+  /* --- Wheel --- */
+  let wLock=false;
+  window.addEventListener('wheel', e=>{
+    if(wLock) return; wLock=true; setTimeout(()=>wLock=false,700);
+    e.deltaY>0 ? go(current+1) : go(current-1);
+  },{passive:true});
+})();
+</script>
+</body>
+</html>
