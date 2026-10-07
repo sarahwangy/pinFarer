@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef } from 'react'
+import type { Map as MapboxMap } from 'mapbox-gl'
 import type { Pin, PinStatus } from '@/types/pin'
 
 const PIN_COLORS: Record<PinStatus, string> = {
@@ -13,7 +14,8 @@ export default function MiniMap({ pin }: { pin: Pin }) {
 
   useEffect(() => {
     if (!mapRef.current) return
-    let map: any = null
+    // 仅导入类型，不会在服务端执行 Mapbox。
+    let map: MapboxMap | null = null
 
     const init = async () => {
       try {
@@ -39,7 +41,7 @@ export default function MiniMap({ pin }: { pin: Pin }) {
           `
           new mapboxgl.Marker({ element: el, anchor: 'center' })
             .setLngLat([pin.lng, pin.lat])
-            .addTo(map)
+            .addTo(map!)
         })
       } catch (err) {
         console.error('[MiniMap] Mapbox init failed:', err)

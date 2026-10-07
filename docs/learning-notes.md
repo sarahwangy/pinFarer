@@ -131,3 +131,10 @@
   - `ANTHROPIC_API_KEY` 没有 `NEXT_PUBLIC_` 前缀 = 只有服务器能读，浏览器无法访问，这是正确做法（保护 API key）
 
 - **一句话总结：** 详情页 = 服务端取数据 + 多个独立 Client Component 各管一块交互，职责分离让每个组件只需要理解自己那一块。
+
+### 部署修复 - TypeScript 类型检查阻止 Vercel 构建
+
+- **学到的核心概念：** `npm run build` 会检查 ESLint 和 TypeScript；`Error` 会阻止部署，图片优化的 `Warning` 不会。外部 JSON 使用 `unknown`，先检查结构再读取字段，是常见的安全解析方式。
+- **用到的关键 API/函数：** `import type`、Mapbox `Map` 类型、`projection: { name: 'globe' }`、类型守卫和 `Number.isFinite`。
+- **容易踩的坑：** 用 `any` 绕过类型检查会触发 `no-explicit-any`；`JSON.parse` 成功不代表数据符合预期。这里的 `properties.location.name/address` 是项目导入文件的字段约定。
+- **一句话总结：** 用具体类型描述地图对象，用运行时检查验证导入数据，保留构建检查并修复实际错误。

@@ -6,24 +6,32 @@ function extractCountry(address: string): string {
 }
 
 export function parseGeoJSON(text: string): ParsedPin[] {
-  let json: any
+  // 外部 JSON 在检查结构之前属于未知数据，不能直接信任字段类型。
+  let json: unknown
   try { json = JSON.parse(text) } catch { return [] }
 
-  if (json.type !== 'FeatureCollection' || !Array.isArray(json.features)) return []
+  if (!isRecord(json) || json.type !== 'FeatureCollection' || !Array.isArray(json.features)) return []
 
-  return (json.features as any[]).reduce((acc: ParsedPin[], feature: any) => {
-    const coords = feature.geometry?.coordinates
+  return json.features.reduce((acc: ParsedPin[], feature: unknown) => {
+    if (!isRecord(feature) || !isRecord(feature.geometry)) return acc
+    const coords = feature.geometry.coordinates
     const props = feature.properties
-    if (!coords || !props) return acc
+    if (feature.geometry.type !== 'Point' || !Array.isArray(coords) || !isRecord(props)) return acc
+    if (!isRecord(props.location)) return acc
 
     const [lng, lat] = coords
-    const name = props.location?.name
-    if (!name || isNaN(lat) || isNaN(lng)) return acc
+    const name = props.location.name
+    if (typeof name !== 'string' || !name.trim()) return acc
+    if (typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lng)) return acc
 
-    const address = props.location?.address ?? ''
+    const address = typeof props.location.address === 'string' ? props.location.address : ''
     const country = extractCountry(address)
 
     acc.push({ name, lat, lng, status: 'watchlist', source: 'unknown', country })
     return acc
   }, [])
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

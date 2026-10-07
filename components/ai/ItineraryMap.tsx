@@ -1,15 +1,10 @@
 'use client'
 import { useEffect, useRef } from 'react'
+import type { Map as MapboxMap } from 'mapbox-gl'
 import type { Pin } from '@/types/pin'
 
 interface Props {
   selectedPins: Pin[]
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  visited:   '#2ECC8A',
-  watchlist: '#F59E2A',
-  dream:     '#8B7FD4',
 }
 
 // Haversine distance in km between two coords
@@ -48,7 +43,7 @@ async function fetchRoute(coords: [number, number][], token: string): Promise<[n
 
 export default function ItineraryMap({ selectedPins }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<any>(null)
+  const mapRef = useRef<MapboxMap | null>(null)
   const tokenRef = useRef<string>('')
 
   useEffect(() => {
@@ -86,7 +81,7 @@ export default function ItineraryMap({ selectedPins }: Props) {
 
     const coords = selectedPins.map(p => [p.lng, p.lat] as [number, number])
 
-    async function applyLayers() {
+    const applyLayers = async () => {
       // Remove existing layers/sources
       ;['route-casing', 'route-line', 'pin-points'].forEach(id => {
         if (map.getLayer(id)) map.removeLayer(id)

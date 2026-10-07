@@ -33,7 +33,7 @@ export default function Map({ pins, onPinClick, flyToPin }: MapProps) {
         style: 'mapbox://styles/mapbox/outdoors-v12',
         center: [20, 20],
         zoom: 1.8,
-        projection: 'globe' as any,
+        projection: { name: 'globe' },
       })
       mapRef.current = map
 

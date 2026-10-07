@@ -14,13 +14,6 @@ const STATUS_COLORS: Record<string, string> = {
   dream:     'var(--lavender)',
 }
 
-const ACT_COLORS: Record<string, string> = {
-  coral:    'var(--coral)',
-  mint:     'var(--mint)',
-  amber:    'var(--amber)',
-  lavender: 'var(--lavender)',
-}
-
 const PRESET_STYLES = ['全部', '文化探索', '美食 + 咖啡', '户外自然', '亲子家庭', '购物娱乐', '自定义…']
 const PRESET_DAYS = [3, 5, 7, 10, 14]
 const PREF_TAGS = ['☕ 精品咖啡', '🍜 当地美食', '🏠 看房考察', '🎨 艺术画廊', '🌿 公园自然', '🛍 购物', '👶 亲子活动', '🏖 海滩']
@@ -58,7 +51,8 @@ export default function AIPage() {
   function togglePin(id: string) {
     setSelectedIds(prev => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
   }
@@ -66,7 +60,8 @@ export default function AIPage() {
   function toggleTag(tag: string) {
     setPrefTags(prev => {
       const next = new Set(prev)
-      next.has(tag) ? next.delete(tag) : next.add(tag)
+      if (next.has(tag)) next.delete(tag)
+      else next.add(tag)
       return next
     })
   }

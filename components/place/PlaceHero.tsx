@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import type { Map as MapboxMap } from 'mapbox-gl'
 import type { Pin, PinStatus } from '@/types/pin'
 
 const STATUS_LABELS: Record<PinStatus, string> = {
@@ -41,7 +42,7 @@ export default function PlaceHero({ pin }: PlaceHeroProps) {
   // Mapbox map init
   useEffect(() => {
     if (!mapRef.current) return
-    let map: any = null
+    let map: MapboxMap | null = null
     let mounted = true
 
     const init = async () => {
@@ -60,7 +61,7 @@ export default function PlaceHero({ pin }: PlaceHeroProps) {
           center: [pin.lng, pin.lat],
           zoom: 10,
           interactive: false,
-          projection: 'globe' as any,
+          projection: { name: 'globe' },
         })
 
         let loaded = false
@@ -78,7 +79,7 @@ export default function PlaceHero({ pin }: PlaceHeroProps) {
           `
           new mapboxgl.Marker({ element: el, anchor: 'center' })
             .setLngLat([pin.lng, pin.lat])
-            .addTo(map)
+            .addTo(map!)
         })
 
         // Only set failed state if map never successfully loaded
