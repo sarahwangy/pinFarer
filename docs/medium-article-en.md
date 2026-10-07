@@ -6,7 +6,7 @@ I have a problem that I suspect a lot of travel-obsessed people share: I save pl
 
 I wanted one map where I could pin every destination I'd visited, was actively planning, or just dreamed about — and when I actually went to plan a trip, I wanted AI to read my pins and build a real itinerary, not a generic "Top 10 things to do in Tokyo" response.
 
-That's Pinfarer. [Live demo → pinfarer.vercel.app](https://pinfarer.vercel.app) | [GitHub → github.com/sarahwangy/pinFarer](https://github.com/sarahwangy/pinFarer)
+That's Pinfarer. [Live demo → pin-farer.vercel.app](https://pin-farer.vercel.app) | [GitHub → github.com/sarahwangy/pinFarer](https://github.com/sarahwangy/pinFarer)
 
 I built this entirely using vibe coding — working with Claude Code as an AI development partner, using structured skills that turn natural language into real software. I'll explain what that looks like in practice below.
 
@@ -432,4 +432,4 @@ The generated plan doesn't just route you through Kyoto → Nara → Osaka gener
 
 ---
 
-*Pinfarer is live at [pinfarer.vercel.app](https://pinfarer.vercel.app). The full source is at [github.com/sarahwangy/pinFarer](https://github.com/sarahwangy/pinFarer). If you've got a Google Maps KML export and want to try the import, it takes about thirty seconds.*
+*Pinfarer is live at [pin-farer.vercel.app](https://pin-farer.vercel.app). The full source is at [github.com/sarahwangy/pinFarer](https://github.com/sarahwangy/pinFarer). If you've got a Google Maps KML export and want to try the import, it takes about thirty seconds.*

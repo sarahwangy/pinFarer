@@ -9,7 +9,7 @@
 | Active Days | 5 |
 | Total Commits | 87 |
 | Branches | 1 (main) |
-| Live Demo | pinfarer.vercel.app |
+| Live Demo | pin-farer.vercel.app |
 
 ## Development Timeline
 

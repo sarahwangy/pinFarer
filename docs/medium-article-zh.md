@@ -8,7 +8,7 @@
 
 我想要一个地方，把所有"去过的"、"想去的"、"随手梦想过的"地点都钉在同一张地图上——然后，当我真的要规划一次旅行时，AI 能读懂我的收藏记录，帮我生成一个真正属于我的行程，而不是泛泛的"东京十大必去景点"。
 
-这就是 Pinfarer 的来由。[在线体验 → pinfarer.vercel.app](https://pinfarer.vercel.app) | [GitHub → github.com/sarahwangy/pinFarer](https://github.com/sarahwangy/pinFarer)
+这就是 Pinfarer 的来由。[在线体验 → pin-farer.vercel.app](https://pin-farer.vercel.app) | [GitHub → github.com/sarahwangy/pinFarer](https://github.com/sarahwangy/pinFarer)
 
 整个项目用 Vibe Coding 方式开发完成——以 Claude Code 作为 AI 开发搭档，通过一套结构化技能（Skills）把自然语言转化为真正可运行的代码。下面我会具体讲这个过程。
 
@@ -426,4 +426,4 @@ Claude 以 JSON 字符串形式返回行程。API 路由用 `ReadableStream` 将
 
 ---
 
-*Pinfarer 在线体验地址：[pinfarer.vercel.app](https://pinfarer.vercel.app)。完整源码在 [github.com/sarahwangy/pinFarer](https://github.com/sarahwangy/pinFarer)。如果你有谷歌地图的 KML 导出文件，想试试导入功能，大概三十秒就能完成。*
+*Pinfarer 在线体验地址：[pin-farer.vercel.app](https://pin-farer.vercel.app)。完整源码在 [github.com/sarahwangy/pinFarer](https://github.com/sarahwangy/pinFarer)。如果你有谷歌地图的 KML 导出文件，想试试导入功能，大概三十秒就能完成。*

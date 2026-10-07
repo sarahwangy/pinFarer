@@ -2,12 +2,12 @@
 
 **Personal travel map + AI trip planner** — pin places you've visited, want to visit, or dream about, then let Claude build your itinerary.
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-pinfarer.vercel.app-blue?style=flat-square)](https://pinfarer.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-pin-farer.vercel.app-blue?style=flat-square)](https://pin-farer.vercel.app)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=flat-square&logo=vercel)](https://vercel.com)
 
-**Live demo:** [pinfarer.vercel.app](https://pinfarer.vercel.app)
+**Live demo:** [pin-farer.vercel.app](https://pin-farer.vercel.app)
 
 ---
 
